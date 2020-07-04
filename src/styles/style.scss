@@ -1,0 +1,186 @@
+body {
+  padding: 10px;
+  margin: 0;
+}
+/*.div1 {
+  position: relative; 
+  height: 300px;
+  width: 100px;
+  border: 1px solid black;
+  padding: 10px;
+}*/
+
+.div2, .div4, .div1 {
+  
+  display: flex;
+  width: 100%;
+  //height: 300px;
+  max-width: 1400px;
+  border: 1px solid black;
+  padding: 30px;
+}
+.div3 {
+  position: relative;  
+  width: 300px;
+  height: 500px;
+  max-width: 1000px;
+  border: 1px solid black;
+
+}
+
+.slider__wrapper {
+  max-width: 600px;
+  min-width: 150px;
+}
+
+.slider {    
+  position: static;
+}
+
+.slider__thumb {  
+  position: absolute;
+  user-select: none;   
+  width: 20px;
+  height: 20px;
+  z-index: 10;
+  box-sizing: border-box;
+  cursor: pointer;
+  &::before {
+    content: '';
+    display: block;
+    width: 100%;
+    height: 100%;
+    background-color: indigo;    
+    border-radius: 50%;
+  }
+}
+
+.slider_horizontal {
+  width: 100%;
+  min-width: 800px;
+  & .slider__track {
+    height: 20px;
+    width: 100%;
+  }
+
+  & .slider__thumb::before {
+    transform: translateX(-50%);
+  }
+
+  & .slider__filler {
+    height: 100%;
+    width: 30%;
+  }
+
+  & .slider__feedback {
+    bottom: 100%;
+  }
+
+  & .slider__scale {
+    width: 100%;
+    height: 30px;  
+  }
+
+  & .scale__mark {
+    height: 10px;
+    width: 0px; 
+  }
+
+  & .scale__mark-label {
+    transform: translate(-50%, 50%); 
+  }  
+}
+
+.slider_vertical {
+  display: flex;
+  height: 100%;
+  min-height: 300px;
+  & .slider__track {
+    height: 100%;
+    width: 20px;
+  }
+
+  & .slider__thumb::before {
+    transform: translateY(-50%);
+  }
+
+  & .slider__filler {
+    height: 30%;
+    width: 100%;
+  }
+
+  & .slider__feedback {
+    right: 100%;
+  }
+
+  & .slider__scale {
+    width: 30px;
+    height: 100%;  
+  }
+
+  & .scale__mark {
+    width: 10px;
+    height: 0px; 
+  }  
+
+  & .scale__mark-label {
+    transform: translate(100%, -50%);
+  }  
+}
+
+.slider__track {
+  position: relative;
+  background-color: red;
+}
+
+
+
+.slider__feedback {
+  position: absolute;    
+  width: 30px;
+  height: 20px;
+  border: 1px solid black;
+  box-sizing: border-box;
+  background-color: white;
+}
+.slider__filler {
+  position: absolute;
+  top: 0px;
+  background-color: green;
+}
+
+.slider__scale {
+  position: relative;    
+  padding-top: 0px;
+  cursor: pointer;   
+}
+
+.scale__mark {    
+  position: absolute;   
+  border: 1px solid black;    
+}
+
+.scale__mark-label {
+  position: absolute;
+  text-align: left;
+}
+
+.control-panel {
+  width: 300px;
+  padding-left: 30px;
+
+  &__label {
+    display: block;
+    margin-bottom: 10px;
+  }
+  &__input {
+    margin-right: 10px;
+    margin-left: 0px;
+
+  }
+}
+
+.input__wrapper {
+  max-width: 200px;
+  padding-left: 80px;  
+}
