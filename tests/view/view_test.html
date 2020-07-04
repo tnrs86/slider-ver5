@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>View tests</title>
+  <script src="../../node_modules/mocha/mocha.js"></script>
+  <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/mocha/3.2.0/mocha.js"></script>-->
+  <link rel="stylesheet" href="../../node_modules/mocha/mocha.css">
+  <link rel="stylesheet" href="../../src/styles/style.css">
+  <script src="../../node_modules/chai/chai.js"></script>
+  <script>
+    // включаем режим тестирования в стиле BDD
+    mocha.setup('bdd');
+  </script>
+  <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/chai/3.5.0/chai.js"></script>-->
+
+</head>
+<body>
+  <div id="mocha"></div>
+  <script src="../../src/scripts/view.ts"></script>
+  <script src="./view_test2.ts"></script>
+
+  <script>
+    mocha.run();
+  </script>
+</body>
+</html>
