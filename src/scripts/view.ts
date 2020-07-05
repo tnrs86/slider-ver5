@@ -41,17 +41,16 @@ export class View {
     } 
   }
 
-  setThumbFeedbacks(): void {
-    if (!this.useFeedback) {
-      this.useFeedback = true;
-      this.sliderThumbs.forEach((thumb)=>{
-        thumb.feedback = new ThumbFeedback('feedback', 'slider__feedback', thumb.htmlObject);
-      })
-    }
+  setThumbFeedbacks(): void { //tested
+    
+    this.sliderThumbs.forEach((thumb)=>{
+      
+      thumb.manageFeedback(true);     
+    })    
   }
 
   setScale(useScale: boolean, scaleData?:{}): void {
-
+    console.log('sscale')
   }
 
   setSliderOrientation(verticalView: boolean): void {
@@ -131,58 +130,119 @@ export class Slider extends PageElement {
       } else {
         this.htmlObject.className = this.className + ' ' + this.className + '_horizontal';
       }
-    }
-    console.log(this.htmlObject.className)
+    }    
   }
 }
 
 export class SliderTrack extends PageElement {
-  setListeners() {
+  setListeners(eventHandler: Function, setCurrentThumb: Function): void { //tested!? (no tested interfaces)
+    this.htmlObject.onmousemove = (event)=> {
 
+    }
+
+    this.htmlObject.onmouseleave = ()=> {
+
+    }
+
+    this.htmlObject.onmousedown = ()=> {
+
+    }
+
+    this.htmlObject.onmouseup = (event)=> {
+
+    }     
   }
 }
 
 export class ThumbFeedback extends PageElement {
-  setValue(value: string): void {
-
+  setValue(value: string): void { //tested
+    this.htmlObject.textContent = value;
   }
 }
 
 export class SliderThumb extends PageElement {
   feedback: ThumbFeedback;
+  feedbackClassName: string = 'thumb__feedback';
+  setListeners(eventHandler: Function): void { //tested!? (no tested interfaces)
+    this.htmlObject.onmousedown = ()=> {
 
-  setListeners(eventHandler: Function): void {
+    }
 
+    this.htmlObject.onmouseup = ()=> {
+
+    }
   }
 
-  move(position: number): void {
-
+  changeOrientation(verticalView: boolean): void { //tested
+    this.verticalView = verticalView;
+    this.htmlObject.style.all = '';
   }
 
-  setPositionAttribute(value?: number): void {
-  
+  manageFeedback(useFeedback: boolean): void { //tested
+    if (useFeedback) {
+      if (!this.feedback) {
+        this.feedback = new ThumbFeedback('feedback', this.feedbackClassName, this.htmlObject)
+      }
+    } else {
+      if (this.feedback) {
+        this.feedback = undefined;        
+        this.htmlObject.removeChild(this.htmlObject.getElementsByClassName(this.feedbackClassName)[0]);
+      }
+    }
   }
 
-  changeOrientation(verticalView: boolean): void {
+  move(position: number, value?: string): void { //tested
+    if (this.feedback) this.feedback.setValue(value);
 
+    if (this.verticalView) {
+      this.htmlObject.style.top = position * 100 + '%';
+    } else {
+      this.htmlObject.style.left = position * 100 + '%';
+    }
   }
 
-  manageFeedback(useFeedback: boolean): void {
-
+  setPositionAttribute(value?: number): void { //tested
+      if (value) {      
+      this.htmlObject.dataset.position = '' + value;
+    } else {
+      if (this.verticalView) {
+        
+        this.htmlObject.dataset.position = '' + this.htmlObject.offsetTop / this.htmlObject.parentElement.offsetHeight;
+      } else {        
+        
+        this.htmlObject.dataset.position = '' + this.htmlObject.offsetLeft / this.htmlObject.parentElement.offsetWidth;
+      }
+    }
   }
 
-  [Symbol.toPrimitive](hint: string) {
+  [Symbol.toPrimitive] = function(hint: string): string | number { //tested
 
+    if (hint == 'number') {      
+      if (this.htmlObject.dataset.position) {
+        return parseFloat(this.htmlObject.dataset.position)      
+      } else {
+        return -1;
+      }
+    } else {
+      return this.name;
+    }    
   }
 }
 
 export class SliderFiller extends PageElement {
-  move(positions: number[]): void {
-
+  move(positions: number[]): void { //tested
+    if (this.verticalView) {
+      this.htmlObject.style.top = positions[0]*100 + '%';
+      this.htmlObject.style.height = (positions[1] - positions[0])*100 + '%';
+    } else {
+      this.htmlObject.style.left = positions[0]*100 + '%';
+      this.htmlObject.style.width = (positions[1] - positions[0])*100 + '%';
+    }
   }
 
-  changeOrientation(verticalView: boolean): void {
-
+  changeOrientation(verticalView: boolean): void { //tested
+    super.changeOrientation(verticalView);    
+    this.htmlObject.style.all = '';
   }
 }
 
@@ -199,7 +259,7 @@ export class SliderScale extends PageElement {
     })      
   };
 
-  createScaleHTMLComponent(position: string, text: string): HTMLElement {
+  createScaleHTMLComponent(position: string, text: string): HTMLElement { //tested
     let result: HTMLElement = document.createElement('div');
     result.className = 'scale__component';
     //position = parseFloat((parseFloat(position).toFixed(3)))*100  + '%';
@@ -217,7 +277,7 @@ export class SliderScale extends PageElement {
     return result;
   }
 
-  changeOrientation(verticalView: boolean): void {
+  changeOrientation(verticalView: boolean): void {//tested
     let classNameModificator: string = '_horizontal';
     let edge: string = 'left';
     if (verticalView) {
