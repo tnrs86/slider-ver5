@@ -1,6 +1,6 @@
 /// <reference path="../../src/scripts/app.d.ts" />
 //import { Model } from '../../src/scripts/model';
-import { expect, assert } from 'chai';
+import { expect, assert, Assertion } from 'chai';
 import * as sinon from 'sinon';
 let chai = require('chai');
 chai.use(require('sinon-chai'));
@@ -96,7 +96,6 @@ describe('Тестирование методов класса и подклас
       })
     })
   })
-
 
   describe('Тестирование методов класса ThumbFeedback (расширенный класс PageElement), представляющего элемент с текстом над бегунком (далее - фидбек)', ()=> {
     describe('Тестирование метода setValue, устанавливающего TextContent для фидбека', ()=> {
@@ -415,6 +414,173 @@ describe('Тестирование методов класса и подклас
           expect(spy).to.have.callCount(thumbsCount);                 
         })            
       }) 
+    })
+
+    describe('Тестирование метода setScale (создание и подключение шкалы слайдера)', ()=> {
+      it('Проверка на передачу экземпляру класса View ссылки на экземпляр класса SliderScale', ()=> {
+
+        let testView: View = new View();
+        testView.slider = new Slider('slider', 'slider', rootHTML);
+        let scaleData: {} = {};
+        
+        testView.setScale(scaleData);
+
+        assert.instanceOf(testView.scale, SliderScale)
+      })
+    })
+
+    describe('Проверка свойства setSliderOrientation, устанавливающего ориентацию для слайдера и его дочерних элементов', ()=> {
+      it('Провека при конфигурации слайдера: выбор диапазона + отображение шкалы + без фидбеков', ()=> {
+        let testView: View = new View();
+        testView.slider = new Slider('slider', 'slider', rootHTML);
+        testView.sliderTrack = new SliderTrack('track', 'slider', rootHTML);
+        testView.scale = new SliderScale('scale', 'slider', rootHTML, {});
+        testView.sliderFiller = new SliderFiller('filler', 'slider', rootHTML);
+        testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML));
+        testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML));
+             
+        let spy = sinon.spy(()=>console.log('it'));
+        let normalChangeOrientation = PageElement.prototype.changeOrientation;
+        PageElement.prototype.changeOrientation = spy;
+
+        testView.setSliderOrientation(true);
+        
+        assert.equal(spy.callCount, 6);
+        
+        PageElement.prototype.changeOrientation = normalChangeOrientation;
+      })
+      
+      it('Провека при конфигурации слайдера: выбор единичного значения + без шкалы + с фидбеком', ()=> {
+        let testView: View = new View();
+        testView.slider = new Slider('slider', 'slider', rootHTML);
+        testView.sliderTrack = new SliderTrack('track', 'slider', rootHTML);
+        testView.scale = new SliderScale('scale', 'slider', rootHTML, {});
+        testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML));
+        testView.sliderThumbs[0].feedback = new ThumbFeedback('feedback', 'feedback', rootHTML);
+
+        let spy = sinon.spy();
+        let normalChangeOrientation = PageElement.prototype.changeOrientation;
+        PageElement.prototype.changeOrientation = spy;
+
+        testView.setSliderOrientation(true);
+        
+        assert.equal(spy.callCount, 5);
+        PageElement.prototype.changeOrientation = normalChangeOrientation;
+      })
+
+    })
+
+    describe('Тестирование метода setElementPositions, устанавливающего позиции у дочерних элементов слайдера (бегунки и заполнитель)', ()=> {
+      it('Тестирование метода при работе слайдера в режиме выбора единичного значения (управление одним бегунком)', ()=> {
+        let testView: View = new View();
+        testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML));
+        
+        let spy = sinon.spy();
+        let normalMove = SliderThumb.prototype.move;
+        SliderThumb.prototype.move = spy;
+
+        let positions: number[] = [0.5];
+        testView.setElementPositions(positions);
+        assert.equal(spy.callCount, 1);
+
+        SliderThumb.prototype.move = normalMove;        
+      })
+
+      it('Тестирование метода при работе слайдера в режиме выбора диапазона (управление двумя бегунками и заполнителем)', ()=> {
+        let testView: View = new View();
+        testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML));
+        testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML));
+        testView.sliderFiller = new SliderFiller('filler', 'filler', rootHTML);
+        
+        let spy = sinon.spy();
+        let normalThumbMove = SliderThumb.prototype.move;
+        SliderThumb.prototype.move = spy;
+        let normalFillerMove = SliderFiller.prototype.move;
+        SliderFiller.prototype.move = spy;
+
+        let positions: number[] = [0.5, 0.8];
+        testView.setElementPositions(positions);
+        assert.equal(spy.callCount, 3);
+
+        SliderThumb.prototype.move = normalThumbMove;
+        SliderFiller.prototype.move = normalFillerMove;
+      })
+    })
+    
+    describe('Тестирование метода setListeners, устанавливающего слушатели на события дочерних элементов View', ()=> {
+      it('Проверка передачи свойству externalHandler экземпляра класса View ссылки на внешний обработчик данных (из Presenter)', ()=> {
+        let testView = new View();
+        let externalListener: Function = ()=> {return };
+        testView.setListeners(externalListener);
+
+        assert.isFunction(testView.externalHandler)
+      })
+
+      it('Проверка количества вызовов методов дочерних элементов', ()=> {
+        let testView = new View();
+        let externalListener: Function;
+        testView.sliderTrack = new SliderTrack('track', 'track', rootHTML);
+        testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML));
+        testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML));
+        testView.scale = new SliderScale('scale', 'scale', rootHTML, {});
+        let spy = sinon.spy();
+        SliderTrack.prototype.setListeners = spy;
+        SliderThumb.prototype.setListeners = spy;
+        SliderScale.prototype.setListeners = spy;
+        testView.setListeners(externalListener);
+        
+        assert.equal(spy.callCount, 4);
+      })
+    })
+
+    describe('Тестирование метода positionHandler. Метод обрабатывает данные о событиях мыши на элементе '+
+    '(относительные координаты курсора - в долях от единицы, и тип события).', ()=> {
+      
+
+      it('Обработка события перемещения курсора мыши на позицию "0.3" (событие mousemove), '+
+        'слайдер работает в режиме выбора единичного значения', ()=> {
+        let testView = new View();
+        let spy = sinon.spy();
+        testView.externalHandler = spy;
+        testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML));
+        testView.sliderThumbs[0].htmlObject.dataset.position = '0.1';
+        testView.activeThumb = testView.sliderThumbs[0];
+        testView.positionHandler(0.3, 'mousemove');
+        expect(spy.args[0][0]).to.deep.equal([0.3]);        
+      })
+
+      it('Обработка события перемещения курсора мыши на позицию "0.6" (событие mousemove), '+
+      'слайдер работает в режиме выбора диапазона', ()=> {
+        let testView = new View();
+        let spy = sinon.spy();
+        testView.externalHandler = spy;
+        testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML));
+        testView.sliderThumbs[0].htmlObject.dataset.position = '0.1';
+        testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML));
+        testView.sliderThumbs[1].htmlObject.dataset.position = '0.4';
+        testView.activeThumb = testView.sliderThumbs[1];
+        testView.positionHandler(0.6, 'mousemove');
+        expect(spy.args[0][0]).to.deep.equal([0.1, 0.6]);        
+      })
+
+      it('Обработка события опускания кнопки мыши над элементом на позиции "0.2" (событие mousedown)', ()=> {
+        let testView = new View();
+        let spy = sinon.spy();
+        testView.externalHandler = spy;
+        testView.positionHandler(0.2, 'mousedown');
+        expect(spy.args[0][0]).to.deep.equal([0.2]);        
+      })
+    })
+
+    describe('Тестирование метода setActiveThumb. '+
+    'Метод передает свойству activeThumb экземпляра класса View ссылку на экземпляр класса SliderThumb, '+
+    'над которым произошло событие мыши (как правило, "mousedown")', ()=> {
+      it('Проверка работоспособности метода', ()=>{
+        let testView: View = new View();
+        let testThumb: SliderThumb  =new SliderThumb('thumb', 'thumb', rootHTML);
+        testView.setActiveThumb(testThumb);
+        assert.equal(testView.activeThumb, testThumb);
+      })
     })
   })
 })
