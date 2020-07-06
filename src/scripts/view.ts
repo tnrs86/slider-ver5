@@ -9,6 +9,10 @@ export class View {
   sliderTrack: SliderTrack;
   sliderThumbs: SliderThumb[] = [];
   sliderFiller: SliderFiller;
+  scale: SliderScale;
+  activeThumb: SliderThumb;
+  externalHandler: Function;
+  //elementsCollection: PageElement[] = []; 
   parentElement: HTMLElement;
   /*constructor() {
     this.parentElement = parentElement;
@@ -27,13 +31,13 @@ export class View {
     this.setPositions(startPositions);
   }*/
 
-  setBaseConfiguration(parentElement: HTMLElement): void {
+  setBaseConfiguration(parentElement: HTMLElement): void { //tested
     this.slider = new Slider('slider', 'slider', parentElement);
     this.sliderTrack = new SliderTrack('track', 'slider__track', this.slider.htmlObject);
     this.sliderThumbs.push(new SliderThumb('thumb', 'slider__thumb', this.sliderTrack.htmlObject));
   }
 
-  setRangeMode(): void {
+  setRangeMode(): void {//tested
     if (!this.rangeMode) {
       this.rangeMode = true;
       this.sliderThumbs.push(new SliderThumb('thumb', 'slider__thumb', this.sliderTrack.htmlObject));
@@ -43,34 +47,89 @@ export class View {
 
   setThumbFeedbacks(): void { //tested
     
-    this.sliderThumbs.forEach((thumb)=>{
-      
+    this.sliderThumbs.forEach((thumb)=>{      
       thumb.manageFeedback(true);     
     })    
   }
 
-  setScale(useScale: boolean, scaleData?:{}): void {
-    console.log('sscale')
+  removeThumbFeedback(): void {
+    this.sliderThumbs.forEach((thumb)=>{      
+      thumb.manageFeedback(false);     
+    })   
   }
 
-  setSliderOrientation(verticalView: boolean): void {
+  setScale(scaleData:{}): void { //tested
+    this.scale = new SliderScale('scale', 'slider__scale', this.slider.htmlObject, scaleData);
+  }
+
+  removeScale(): void {
 
   }
 
-  setElementPositions(positions: number[]) {
+  setSliderOrientation(verticalView: boolean): void { //tested
+    Object.keys(this).forEach((key)=> {
+      if (this[key] instanceof PageElement) {
+        this[key].changeOrientation(verticalView)
+      }  
 
+    })
+    this.sliderThumbs.forEach((thumb)=> {
+        
+      thumb.changeOrientation(verticalView);
+    })
   }
 
-  setListeners(): void {
+  setElementPositions(positions: number[]) { //tested
+    this.sliderThumbs.forEach((thumb, index)=> {
+      thumb.move(positions[index]);
+    })
 
+    if (this.sliderFiller) {
+      this.sliderFiller.move(positions);
+    }
   }
 
-  eventHandler(): void {
+  setListeners(externalHandler: Function): void { //tested
+    this.externalHandler = externalHandler;
+    
+    if (this.sliderTrack && this.sliderThumbs[0]) {
+      let viewContext = this; 
+      this.sliderTrack.setListeners(viewContext.positionHandler, viewContext.setActiveThumb);
+      this.sliderThumbs.forEach((thumb)=>{
+        thumb.setListeners(viewContext.setActiveThumb);
+      })
+
+      if (this.scale) {
+        this.scale.setListeners(viewContext.positionHandler);
+      }
+
+    } else {
+      //bug!!
+    }
+  }
+
+  positionHandler(position: number, eventType: string): void { //tested
     //обработчик данных, полученных при срабатывании событий на элементах
+    let results: number[] = [];
+
+    if (eventType == 'mousemove') {      
+      if (this.activeThumb) {
+        this.activeThumb.setPositionAttribute(position);
+        this.sliderThumbs.forEach((thumb)=> {
+          results.push(+thumb);
+        })
+      }
+    } else if (eventType == 'mousedown') {
+      results.push(position);
+    } else {
+
+    }
+
+    this.externalHandler(results);
   }
 
-  setActiveThumb(): void {
-
+  setActiveThumb(currentThumb: SliderThumb | undefined): void { //tested
+    this.activeThumb = currentThumb;
   }
 
   dataConverter() {
@@ -123,7 +182,8 @@ export class Slider extends PageElement {
   changeOrientation(verticalView: boolean) { //tested 
     
     if (this.verticalView != verticalView) {
-      this.verticalView = verticalView;      
+      super.changeOrientation(verticalView);
+      //this.verticalView = verticalView;      
       if (verticalView) {
         
         this.htmlObject.className = this.className + ' ' + this.className + '_vertical';
@@ -137,19 +197,19 @@ export class Slider extends PageElement {
 export class SliderTrack extends PageElement {
   setListeners(eventHandler: Function, setCurrentThumb: Function): void { //tested!? (no tested interfaces)
     this.htmlObject.onmousemove = (event)=> {
-
+      //передавать дальше расстояние в долях от единицы
     }
 
     this.htmlObject.onmouseleave = ()=> {
-
+      setCurrentThumb(undefined);
     }
 
     this.htmlObject.onmousedown = ()=> {
-
+      //передавать дальше расстояние в долях от единицы
     }
 
     this.htmlObject.onmouseup = (event)=> {
-
+      setCurrentThumb(undefined);
     }     
   }
 }
@@ -165,17 +225,20 @@ export class SliderThumb extends PageElement {
   feedbackClassName: string = 'thumb__feedback';
   setListeners(eventHandler: Function): void { //tested!? (no tested interfaces)
     this.htmlObject.onmousedown = ()=> {
-
+      //eventHandler(this);
     }
 
     this.htmlObject.onmouseup = ()=> {
-
+      //eventHandler(undefined);
     }
   }
 
   changeOrientation(verticalView: boolean): void { //tested
-    this.verticalView = verticalView;
+    super.changeOrientation(verticalView);
     this.htmlObject.style.all = '';
+    if (this.feedback) {
+      this.feedback.changeOrientation(verticalView);
+    }
   }
 
   manageFeedback(useFeedback: boolean): void { //tested
@@ -278,19 +341,28 @@ export class SliderScale extends PageElement {
   }
 
   changeOrientation(verticalView: boolean): void {//tested
-    let classNameModificator: string = '_horizontal';
-    let edge: string = 'left';
-    if (verticalView) {
-      classNameModificator = '_vertical';
-      edge = 'top';
+
+    if (this.verticalView != verticalView) {
+      super.changeOrientation(verticalView);
+      let classNameModificator: string = '_horizontal';
+      let edge: string = 'left';
+      if (verticalView) {
+        classNameModificator = '_vertical';
+        edge = 'top';
+      }
+
+      this.htmlObject.className = this.className + ' ' + this.className + classNameModificator;
+
+      this.htmlObject.childNodes.forEach((node: HTMLElement)=>{
+        node.style.all = '';
+        node.style[edge] = parseFloat(node.dataset.position) * 100 + '%';      
+      })
     }
+  }
 
-    this.htmlObject.className = this.className + ' ' + this.className + classNameModificator;
-
-    this.htmlObject.childNodes.forEach((node: HTMLElement)=>{
-      node.style.all = '';
-      node.style[edge] = parseFloat(node.dataset.position) * 100 + '%';      
-    })
-    
+  setListeners(eventHandler: Function): void {
+    this.htmlObject.onclick = ()=> {
+      //передавать дальше расстояние в долях от единицы
+    }
   }
 }
