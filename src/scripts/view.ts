@@ -79,13 +79,24 @@ export class View {
     })
   }
 
-  setElementPositions(positions: number[]) { //tested
-    this.sliderThumbs.forEach((thumb, index)=> {
-      thumb.move(positions[index]);
-    })
+  setElementPositions(positions: number[]|number, index?: number) { 
+    if ( typeof positions == 'object' && typeof index == 'undefined') { //tested
+      this.sliderThumbs.forEach((thumb, index)=> {
+        thumb.move(positions[index]);
+      })
 
-    if (this.sliderFiller) {
-      this.sliderFiller.move(positions);
+      if (this.sliderFiller) {
+        this.sliderFiller.move(positions as number[]);
+      }
+
+    } else if (typeof positions == 'number' && typeof index == 'number' ) { //tested
+      
+      this.sliderThumbs[index].move(positions);
+      this.sliderFiller.move([this.sliderThumbs[0].getPositionAttribute(), this.sliderThumbs[1].getPositionAttribute()])
+      
+    } else {
+      
+      //bug
     }
   }
 
@@ -222,7 +233,7 @@ export class ThumbFeedback extends PageElement {
 
 export class SliderThumb extends PageElement {
   feedback: ThumbFeedback;
-  feedbackClassName: string = 'thumb__feedback';
+  feedbackClassName: string = 'thumb__feedback';  
   setListeners(eventHandler: Function): void { //tested!? (no tested interfaces)
     this.htmlObject.onmousedown = ()=> {
       //eventHandler(this);
@@ -276,6 +287,10 @@ export class SliderThumb extends PageElement {
         this.htmlObject.dataset.position = '' + this.htmlObject.offsetLeft / this.htmlObject.parentElement.offsetWidth;
       }
     }
+  }
+  
+  getPositionAttribute(): number { //notested
+    return parseFloat(this.htmlObject.dataset.position);
   }
 
   [Symbol.toPrimitive] = function(hint: string): string | number { //tested
