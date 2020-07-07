@@ -439,7 +439,7 @@ describe('Тестирование методов класса и подклас
         testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML));
         testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML));
              
-        let spy = sinon.spy(()=>console.log('it'));
+        let spy = sinon.spy();
         let normalChangeOrientation = PageElement.prototype.changeOrientation;
         PageElement.prototype.changeOrientation = spy;
 
@@ -470,7 +470,8 @@ describe('Тестирование методов класса и подклас
 
     })
 
-    describe('Тестирование метода setElementPositions, устанавливающего позиции у дочерних элементов слайдера (бегунки и заполнитель)', ()=> {
+    describe('Тестирование метода setElementPositions(positions: number[]|number, index?: number), '+
+    'устанавливающего позиции у дочерних элементов слайдера (бегунки и заполнитель)', ()=> {
       it('Тестирование метода при работе слайдера в режиме выбора единичного значения (управление одним бегунком)', ()=> {
         let testView: View = new View();
         testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML));
@@ -486,7 +487,8 @@ describe('Тестирование методов класса и подклас
         SliderThumb.prototype.move = normalMove;        
       })
 
-      it('Тестирование метода при работе слайдера в режиме выбора диапазона (управление двумя бегунками и заполнителем)', ()=> {
+      it('Тестирование метода при работе слайдера в режиме выбора диапазона (управление двумя бегунками и заполнителем), '+
+      'позиция задается массивом значений (позиция левого и правого бегунка)', ()=> {
         let testView: View = new View();
         testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML));
         testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML));
@@ -501,6 +503,37 @@ describe('Тестирование методов класса и подклас
         let positions: number[] = [0.5, 0.8];
         testView.setElementPositions(positions);
         assert.equal(spy.callCount, 3);
+
+        SliderThumb.prototype.move = normalThumbMove;
+        SliderFiller.prototype.move = normalFillerMove;
+      })
+
+      it('Тестирование метода при работе слайдера в режиме выбора диапазона (управление двумя бегунками и заполнителем), '+
+      'задается позиция конкретного бегунка (позиция на треке и номер бегунка в массиве sliderThumbs)', ()=> {
+        let testView: View = new View();
+        testView.verticalView = false;
+        testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML));        
+        testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML));
+        testView.sliderFiller = new SliderFiller('filler', 'filler', rootHTML);
+        
+        let spy = sinon.spy();
+        let normalThumbMove = SliderThumb.prototype.move;
+        SliderThumb.prototype.move = spy;
+        let normalFillerMove = SliderFiller.prototype.move;
+        SliderFiller.prototype.move = spy;
+
+        let i: number = 2;
+        let stub = sinon.stub(SliderThumb.prototype, 'getPositionAttribute').callsFake(()=> {
+          i++;
+          return i;
+        });
+
+        let position: number = 0.8;
+        testView.setElementPositions(position, 1);
+        
+        assert.deepEqual(spy.thisValues[0], testView.sliderThumbs[1]);
+        assert.equal(spy.args[0][0], '0.8');
+        assert.deepEqual(spy.args[1][0], [3, 4]);
 
         SliderThumb.prototype.move = normalThumbMove;
         SliderFiller.prototype.move = normalFillerMove;
