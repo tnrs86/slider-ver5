@@ -9,7 +9,7 @@ export class View {
   sliderTrack: SliderTrack;
   sliderThumbs: SliderThumb[] = [];
   sliderFiller: SliderFiller;
-  scale: SliderScale;
+  sliderScale: SliderScale;
   activeThumb: SliderThumb;
   externalHandler: Function;
   //elementsCollection: PageElement[] = []; 
@@ -33,7 +33,7 @@ export class View {
 
   setBaseConfiguration(parentElement: HTMLElement): void { //tested
     this.slider = new Slider('slider', 'slider', parentElement);
-    this.sliderTrack = new SliderTrack('track', 'slider__track', this.slider.htmlObject);
+    this.sliderTrack = new SliderTrack('track', 'slider__track', this.slider.htmlObject);    
     this.sliderThumbs.push(new SliderThumb('thumb', 'slider__thumb', this.sliderTrack.htmlObject));
   }
 
@@ -59,14 +59,22 @@ export class View {
   }
 
   setScale(scaleData:{}): void { //tested
-    this.scale = new SliderScale('scale', 'slider__scale', this.slider.htmlObject, scaleData);
+    this.sliderScale = new SliderScale('scale', 'slider__scale', this.slider.htmlObject, scaleData);
   }
 
   removeScale(): void {
 
   }
 
-  setSliderOrientation(verticalView: boolean): void { //tested
+  setSliderOrientation(verticalView: boolean, sliderElement?: PageElement ): void { //tested
+
+    if (sliderElement) {
+      
+      sliderElement.changeOrientation(verticalView);
+      
+      return;
+    }
+    this.verticalView = verticalView;
     Object.keys(this).forEach((key)=> {
       if (this[key] instanceof PageElement) {
         this[key].changeOrientation(verticalView)
@@ -79,10 +87,11 @@ export class View {
     })
   }
 
-  setElementPositions(positions: number[]|number, index?: number) { 
+  setElementPositions(positions: number[]|number, index?: number, feedbackContent?: string) { 
     if ( typeof positions == 'object' && typeof index == 'undefined') { //tested
       this.sliderThumbs.forEach((thumb, index)=> {
-        thumb.move(positions[index]);
+        thumb.move(positions[index], feedbackContent);
+        thumb.setPositionAttribute(positions[index]);
       })
 
       if (this.sliderFiller) {
@@ -91,8 +100,12 @@ export class View {
 
     } else if (typeof positions == 'number' && typeof index == 'number' ) { //tested
       
-      this.sliderThumbs[index].move(positions);
-      this.sliderFiller.move([this.sliderThumbs[0].getPositionAttribute(), this.sliderThumbs[1].getPositionAttribute()])
+      this.sliderThumbs[index].move(positions, feedbackContent);
+      this.sliderThumbs[index].setPositionAttribute(positions);
+      if (this.sliderFiller) {        
+        
+        this.sliderFiller.move([this.sliderThumbs[0].getPositionAttribute(), this.sliderThumbs[1].getPositionAttribute()]);
+      }
       
     } else {
       
@@ -104,14 +117,14 @@ export class View {
     this.externalHandler = externalHandler;
     
     if (this.sliderTrack && this.sliderThumbs[0]) {
-      let viewContext = this; 
-      this.sliderTrack.setListeners(viewContext.positionHandler, viewContext.setActiveThumb);
+       
+      this.sliderTrack.setListeners(this.positionHandler.bind(this), this.setActiveThumb.bind(this));
       this.sliderThumbs.forEach((thumb)=>{
-        thumb.setListeners(viewContext.setActiveThumb);
+        thumb.setListeners(this.setActiveThumb.bind(this));
       })
 
-      if (this.scale) {
-        this.scale.setListeners(viewContext.positionHandler);
+      if (this.sliderScale) {
+        this.sliderScale.setListeners(this.positionHandler.bind(this));
       }
 
     } else {
@@ -119,40 +132,57 @@ export class View {
     }
   }
 
-  positionHandler(position: number, eventType: string): void { //tested
+  positionHandler(position: number, eventType: string): void {
     //обработчик данных, полученных при срабатывании событий на элементах
-    let results: number[] = [];
 
+    //переработать: на выходе должно быть число или число и индекс
+    let results: number[] = [];
+    
     if (eventType == 'mousemove') {      
       if (this.activeThumb) {
-        this.activeThumb.setPositionAttribute(position);
+        let index: number;
+        index = this.sliderThumbs.indexOf(this.activeThumb);
+        this.externalHandler(position, index);
+        /*this.activeThumb.setPositionAttribute(position);
+        
         this.sliderThumbs.forEach((thumb)=> {
           results.push(+thumb);
-        })
+        })*/
       }
     } else if (eventType == 'mousedown') {
       results.push(position);
+      this.externalHandler(position);
     } else {
 
-    }
-
-    this.externalHandler(results);
+    }    
   }
 
   setActiveThumb(currentThumb: SliderThumb | undefined): void { //tested
     this.activeThumb = currentThumb;
   }
 
+  getSliderSize(verical?: boolean): number { //tested
+    
+    if (typeof verical == 'undefined') {
+      if (typeof this.verticalView != 'undefined') {
+        if (this.verticalView) {          
+          return this.sliderTrack.htmlObject.clientHeight;
+        }
+        return this.sliderTrack.htmlObject.clientWidth;        
+      } else {
+        //bug
+      }
+    } else {
+      if (verical) {
+        return this.sliderTrack.htmlObject.clientHeight;
+      } else {
+        return this.sliderTrack.htmlObject.clientWidth; 
+      }
+    }
+  }
+
   dataConverter() {
     //перевод величин из px в %, используется в eventHandler
-  }
-}
-
-class UserBoolean {
-  value: boolean;
-
-  [Symbol.toPrimitive](hunt) {
-    return this.value
   }
 }
 
@@ -207,16 +237,24 @@ export class Slider extends PageElement {
 
 export class SliderTrack extends PageElement {
   setListeners(eventHandler: Function, setCurrentThumb: Function): void { //tested!? (no tested interfaces)
+    
     this.htmlObject.onmousemove = (event)=> {
       //передавать дальше расстояние в долях от единицы
+      let result: number;
+      if (this.verticalView) {
+        result = (event.clientY - this.htmlObject.getBoundingClientRect().top) / this.htmlObject.clientHeight;
+      } else {
+        result = (event.clientX - this.htmlObject.getBoundingClientRect().left) / this.htmlObject.clientWidth;
+      }
+      eventHandler(result, event.type);
     }
 
-    this.htmlObject.onmouseleave = ()=> {
+    this.htmlObject.onmouseleave = ()=> {      
       setCurrentThumb(undefined);
     }
 
     this.htmlObject.onmousedown = ()=> {
-      //передавать дальше расстояние в долях от единицы
+      //передавать дальше расстояние в долях от единицы      
     }
 
     this.htmlObject.onmouseup = (event)=> {
@@ -235,12 +273,12 @@ export class SliderThumb extends PageElement {
   feedback: ThumbFeedback;
   feedbackClassName: string = 'thumb__feedback';  
   setListeners(eventHandler: Function): void { //tested!? (no tested interfaces)
-    this.htmlObject.onmousedown = ()=> {
-      //eventHandler(this);
+    this.htmlObject.onmousedown = ()=> {      
+      eventHandler(this);
     }
 
     this.htmlObject.onmouseup = ()=> {
-      //eventHandler(undefined);
+      eventHandler(undefined);
     }
   }
 
@@ -266,6 +304,7 @@ export class SliderThumb extends PageElement {
   }
 
   move(position: number, value?: string): void { //tested
+    
     if (this.feedback) this.feedback.setValue(value);
 
     if (this.verticalView) {
