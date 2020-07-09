@@ -1,6 +1,7 @@
 /// <reference path="../../src/scripts/app.d.ts" />
 import { Model } from '../../src/scripts/model';
 import { expect, assert } from 'chai';
+import * as sinon from 'sinon';
 //import { assert } from 'chai/lib/Chai';
 /*const chai = require('chai');
 const assertArrays = require('chai-arrays');
@@ -44,7 +45,6 @@ describe('Проверка методов экземпляров класса Mo
   describe('Проверка метода checkValues(values: number, index: number), '+
   'анализирующего поступающие из View через презентер вероятные координаты бегунка', ()=> {
     let testModel: Model = new Model();
-
     describe('Проверка на выход за заданные границы величины', ()=> {
       it('Вероятное значение выбираемой величины в пределах заданной границы', ()=> {
         assert.isTrue(testModel.checkValues(0.9));
@@ -155,6 +155,77 @@ describe('Проверка методов экземпляров класса Mo
     it('Расчет величины при не нулевом шаге (0.2) хода слайдера (величина изменяется в меньшую сторону)', ()=> {
       testModel.step = 0.2;
       assert.equal(testModel.calcCurrentValue(0.25, 1), 0.4);
+    })
+  })
+
+  describe('Проверка метода possibleValueAnalysis(possibleValue: number, index?: number): number, '+
+  'метод проводит анализ поступающего из Presenter вероятного значения слайдера. Возвращает истинное значение, '+
+  'либо -1, если значение слайдера менять не требуется', ()=>{
+    
+    describe('Тестирование метода при работе слайдера в режиме выбора уникального значения', ()=> {
+      
+      
+      it('Тестирование при незаданном аргументе index', ()=> {
+        let testModel: Model = new Model();
+        testModel.currentValues = [0.3, 0.9];
+
+        let spy: sinon.SinonSpy = sinon.spy(()=> {return spy.returnValues[spy.callCount - 1]});        
+        Model.prototype.checkValues = spy;
+        Model.prototype.findRangeEdge = spy;
+        Model.prototype.checkPossibleMove = spy;
+        Model.prototype.calcCurrentValue = spy;
+        spy.returnValues = [true, 1, true, 0.6];
+        
+        let localResult: number = testModel.possibleValueAnalysis(0.6);
+        assert.equal(localResult, 0.6);
+      })
+
+      it('Тестирование при заданном аргументе index', ()=> {
+        let testModel: Model = new Model();
+        testModel.currentValues = [0.3, 0.9];
+
+        let spy: sinon.SinonSpy = sinon.spy(()=> {return spy.returnValues[spy.callCount - 1]});        
+        Model.prototype.checkValues = spy; //первый вызов
+        Model.prototype.findRangeEdge = spy; //второй вызов
+        Model.prototype.checkPossibleMove = spy; //третий вызов
+        Model.prototype.calcCurrentValue = spy; //четвертый вызов       
+        spy.returnValues = [true, true, 0.35];
+        
+        let localResult: number = testModel.possibleValueAnalysis(0.35, 1);
+        assert.equal(localResult, 0.35);              
+      })
+
+
+      it('Тестирование при получении методом аргумента, не удовлетворяющего проверочным условиям '+
+      '(перемещение меньше заданного шага, попытка задать отрицательный пользовательский диапазон', ()=> {
+        let testModel: Model = new Model();
+        testModel.currentValues = [0.3, 0.9];
+
+        let spy: sinon.SinonSpy = sinon.spy(()=> {return spy.returnValues[spy.callCount - 1]});        
+        Model.prototype.checkValues = spy; //первый вызов       
+        Model.prototype.checkPossibleMove = spy; //второй вызов                
+        spy.returnValues = [true, false];
+
+        let localResult: number = testModel.possibleValueAnalysis(0.35, 0);
+        assert.equal(localResult, -1);
+      });
+      
+    })
+
+    describe('Тестирование метода при работе слайдера в режиме выбора диапазона', ()=> {
+      it('Тестирование при незаданном аргументе index', ()=> {
+        let testModel: Model = new Model();
+        testModel.currentValues = [0.3];
+
+        let spy: sinon.SinonSpy = sinon.spy(()=> {return spy.returnValues[spy.callCount - 1]});        
+        Model.prototype.checkValues = spy; //первый вызов       
+        Model.prototype.checkPossibleMove = spy; //второй вызов
+        Model.prototype.calcCurrentValue = spy; //третий вызов              
+        spy.returnValues = [true, false, 0.6];
+
+        let localResult: number = testModel.possibleValueAnalysis(0.6, 0);
+        assert.equal(localResult, -1);
+      });
     })
   })
 })
