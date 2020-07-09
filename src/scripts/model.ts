@@ -4,6 +4,7 @@ export class Model {
   currentValues: number[] = [];
   step: number;
   rangeMode: boolean;
+
   setCurrentValues(values: number[]| number, index?: number): void { //tested
     if (typeof values == 'object' &&  typeof index == 'undefined') {
       this.currentValues = values as number[];
@@ -11,22 +12,30 @@ export class Model {
       this.currentValues[index] = values;
     } else {
       //bug
-    }
-     
+    }     
+  }
+
+  setStep(step: number): void {
+    this.step = step;
   }
 
   getCurrenValues(): number[] { //tested
     return this.currentValues;
   }
 
-  possibleValueAnalysis(possibleValue: number, index?: number): number {
-    if (this.checkValues(possibleValue)) {
-      if (!index) {
-        index = this.findRangeEdge(possibleValue);
+  possibleValueAnalysis(possibleValue: number, index?: number): number { //tested
+    if ( this.checkValues(possibleValue) ) {
+      
+      if (typeof index === 'undefined') {        
+        if (this.currentValues.length > 1) {
+          index = this.findRangeEdge(possibleValue);          
+        } else {
+          index = 0;
+        }          
       }
 
-      if (this.checkPossibleMove(possibleValue, index)) {
-        let result = this.calcCurrentValue(possibleValue, index);
+      if ( this.checkPossibleMove(possibleValue, index) ) {
+        let result: number = this.calcCurrentValue(possibleValue, index);
         this.setCurrentValues(result, index);
         return result;
       }
@@ -35,19 +44,12 @@ export class Model {
     return -1;
   }
 
-  checkValues(values: number): boolean {    
+  checkValues(values: number): boolean {   //tested 
     
     if (values > 1 || values < 0) return false;
 
     return true;
-
   }
-
-  /*findChange(values: number[]): number {
-    let result: number;
-
-    return result;
-  }*/
 
   checkPossibleMove(values: number, index: number):boolean { //tested
     if (this.step) {
@@ -79,8 +81,7 @@ export class Model {
       
       default:
         return 1;
-    }
-    
+    }    
   }
 
   calcCurrentValue(possibleValue: number, index: number): number { //tested
@@ -91,9 +92,6 @@ export class Model {
       return parseFloat((this.currentValues[index] + stepCount * this.step).toFixed(2));
     } else {
       return possibleValue;
-    }
-    
+    }    
   }
-
-
 }
