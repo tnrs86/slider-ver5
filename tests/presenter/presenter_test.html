@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Model tests</title>
+  <script src="../../node_modules/mocha/mocha.js"></script>
+  
+  <link rel="stylesheet" href="../../node_modules/mocha/mocha.css">
+  <script src="../../node_modules/chai/chai.js"></script>
+  <script>
+    // включаем режим тестирования в стиле BDD
+    mocha.setup('bdd');
+  </script>
+  
+
+</head>
+<body>
+  <div id="mocha"></div>
+  <script src="../../src/scripts/presenter.ts"></script>
+  <script src="./presenter_test.ts"></script>
+
+  <script>
+    mocha.run();
+  </script>
+</body>
+</html>
