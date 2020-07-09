@@ -2,13 +2,13 @@ body {
   padding: 10px;
   margin: 0;
 }
-/*.div1 {
+.div1 {
   position: relative; 
   height: 300px;
   width: 100px;
   border: 1px solid black;
   padding: 10px;
-}*/
+}
 
 .div2, .div4, .div1 {
   
@@ -72,7 +72,7 @@ body {
     width: 30%;
   }
 
-  & .slider__feedback {
+  & .thumb__feedback {
     bottom: 100%;
   }
 
@@ -109,7 +109,7 @@ body {
     width: 100%;
   }
 
-  & .slider__feedback {
+  & .thumb__feedback {
     right: 100%;
   }
 
@@ -133,9 +133,7 @@ body {
   background-color: red;
 }
 
-
-
-.slider__feedback {
+.thumb__feedback {
   position: absolute;    
   width: 30px;
   height: 20px;
@@ -153,6 +151,10 @@ body {
   position: relative;    
   padding-top: 0px;
   cursor: pointer;   
+}
+
+.scale__component {
+  position: absolute;
 }
 
 .scale__mark {    
