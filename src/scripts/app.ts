@@ -20,48 +20,48 @@ window.onload = function() {
   options  = Object.assign(options, defaults, params);
   
   let rootElement = document.getElementById(htmlElement);
-  let model: Model = new Model(options);
+  let model: Model = new Model();
   
-  let view: View = new View(options, rootElement);
-  let presenter: Presenter = new Presenter(model, view, options);
-  presenter.init(); 
+  let view: View = new View();
+  let presenter: Presenter = new Presenter(options, view, model);
+  presenter.init(rootElement, options.rangeMode, options.usefeedBack, options.useScale, options.verticalView, options.step, options.noNumericScale); 
   }
 
   mySlider({verticalView: true,         
-    minValue:500, 
-    maxValue:1400,
-    startRange:600, 
-    endRange:800,
-    step: 50,           
+    minPossibleValue:500, 
+    maxPossibleValue:1400,
+    startSelectedRange:600, 
+    endSelectedRange:800,
+    step: 150,           
     useScale: true,
     stepScale: 100,
-    feedBack: true,       
+    usefeedBack: true,       
     externalRecievers: [document.getElementById('first-input'), document.getElementById('second-input')]}
     , 'div1');
 
     mySlider({verticalView: false,
       rangeMode: false,         
-      minValue:500, 
-      maxValue:1000, 
-      startRange:600, 
-      endRange:900,                 
+      minPossibleValue:500, 
+      maxPossibleValue:1000, 
+      startSelectedRange:600, 
+      endSelectedRange:900,                 
       useScale: true,
       stepScale: 100,
-      feedBack: true,        
+      usefeedBack: true,        
       externalRecievers: [document.getElementById('third-input'), document.getElementById('fourth-input')]}
       , 'div2');
 
       mySlider({verticalView: false,
         rangeMode: true,         
-        minValue:500, 
-        maxValue:1400,
+        minPossibleValue:500, 
+        maxPossibleValue:1400,
         noNumericValues: true,
-        noNumericScale:{'одни': 1, 'два': 1, 'три': 1, 'четыре': 1, 'пять': 3, 'восемь': 1, 'девять':0},
-        startRange:600, 
-        endRange:900,                 
+        noNumericScale:{'одни': 0, 'два': 1, 'три': 1, 'четыре': 1, 'пять': 1, 'восемь': 3, 'девять':1},
+        startSelectedRange:600, 
+        endSelectedRange:900,                 
         useScale: true,
         stepScale: 100,
-        feedBack: true,        
+        usefeedBack: true,        
         externalRecievers: [document.getElementById('fifth-input'), document.getElementById('sixth-input')]}
         , 'div4');
 
