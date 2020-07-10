@@ -5,6 +5,8 @@ import * as sinon from 'sinon';
 let chai = require('chai');
 chai.use(require('sinon-chai'));
 import { View, PageElement, Slider, SliderTrack, SliderThumb, SliderFiller, ThumbFeedback, SliderScale } from '../../src/scripts/view';
+import { Presenter } from '../../src/scripts/presenter';
+import { after } from 'mocha';
 
 let rootHTML: HTMLElement = document.createElement('div');
 document.getElementsByTagName('body')[0].append(rootHTML);
@@ -42,6 +44,20 @@ describe('Тестирование методов класса и подклас
       it('Тестирование при вертикальной ориентации слайдера (аргумент метода: true)', ()=> {
         let testElement = new Slider('slider', 'slider', rootHTML);
         testElement.changeOrientation(true);      
+      })
+    })
+
+    describe('Тестирование метода removeHTMLElement(): void, удаляющего HTML объект элемента слайдера', ()=> {
+      afterEach(()=> {        
+        sinon.restore();
+      })
+      it('Тест 1', ()=> {
+        let testPageElement = new PageElement('element', 'element', rootHTML);
+        let spy = sinon.spy();
+        sinon.stub(HTMLElement.prototype, 'remove').callsFake(spy);
+        testPageElement.removeHTMLElement();
+        assert.equal(spy.callCount, 1);
+        
       })
     })
   })
@@ -425,16 +441,37 @@ describe('Тестирование методов класса и подклас
         
         testView.setScale(scaleData);
 
-        assert.instanceOf(testView.scale, SliderScale)
+        assert.instanceOf(testView.sliderScale, SliderScale)
       })
     })
 
-    describe('Проверка свойства setSliderOrientation, устанавливающего ориентацию для слайдера и его дочерних элементов', ()=> {
+    describe('Тестирование метода removeScale(): void, удаляющего шкалу из слайдера', ()=> {
+      afterEach(()=> {
+        sinon.restore();
+      })
+
+      it('Проверка 1', ()=> {
+        let testView = new View();        
+        let sliderHTMLObject: HTMLElement = document.createElement('div');
+
+        let spy = sinon.spy();
+        testView.sliderScale = new SliderScale('scale', 'scale', rootHTML, {});
+        sinon.stub(SliderScale.prototype, 'removeHTMLElement').callsFake(spy);
+        testView.sliderScale.htmlObject = sliderHTMLObject;
+        
+        testView.removeScale();
+        assert.isUndefined(testView.sliderScale);
+        assert.equal(spy.callCount, 1);
+      })
+    })
+
+    describe('Проверка свойства setSliderOrientation(verticalView: boolean, sliderElement?: PageElement ): void, '+
+      'устанавливающего ориентацию для слайдера и его дочерних элементов', ()=> {
       it('Провека при конфигурации слайдера: выбор диапазона + отображение шкалы + без фидбеков', ()=> {
         let testView: View = new View();
         testView.slider = new Slider('slider', 'slider', rootHTML);
         testView.sliderTrack = new SliderTrack('track', 'slider', rootHTML);
-        testView.scale = new SliderScale('scale', 'slider', rootHTML, {});
+        testView.sliderScale = new SliderScale('scale', 'slider', rootHTML, {});
         testView.sliderFiller = new SliderFiller('filler', 'slider', rootHTML);
         testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML));
         testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML));
@@ -454,7 +491,7 @@ describe('Тестирование методов класса и подклас
         let testView: View = new View();
         testView.slider = new Slider('slider', 'slider', rootHTML);
         testView.sliderTrack = new SliderTrack('track', 'slider', rootHTML);
-        testView.scale = new SliderScale('scale', 'slider', rootHTML, {});
+        testView.sliderScale = new SliderScale('scale', 'slider', rootHTML, {});
         testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML));
         testView.sliderThumbs[0].feedback = new ThumbFeedback('feedback', 'feedback', rootHTML);
 
@@ -466,6 +503,15 @@ describe('Тестирование методов класса и подклас
         
         assert.equal(spy.callCount, 5);
         PageElement.prototype.changeOrientation = normalChangeOrientation;
+      })
+
+      it('Проверка при указании аргумента sliderElement. В данном случае меняется ориентация только указанного элемента', ()=> {
+        let testView: View = new View();
+        testView.sliderScale = sinon.createStubInstance(SliderScale);
+        let stub = sinon.stub(SliderScale.prototype, 'changeOrientation');
+        testView.setSliderOrientation(true, testView.sliderScale)
+        
+        stub.restore();
       })
 
     })
@@ -555,20 +601,28 @@ describe('Тестирование методов класса и подклас
         testView.sliderTrack = new SliderTrack('track', 'track', rootHTML);
         testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML));
         testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML));
-        testView.scale = new SliderScale('scale', 'scale', rootHTML, {});
+        testView.sliderScale = new SliderScale('scale', 'scale', rootHTML, {});
+       
+
         let spy = sinon.spy();
+        let normalSteListenerTrack = SliderTrack.prototype.setListeners;
         SliderTrack.prototype.setListeners = spy;
+        let normalSteListenerThumb = SliderThumb.prototype.setListeners;
         SliderThumb.prototype.setListeners = spy;
+        let normalSteListenerScale = SliderScale.prototype.setListeners;
         SliderScale.prototype.setListeners = spy;
+        
         testView.setListeners(externalListener);
         
         assert.equal(spy.callCount, 4);
+        SliderTrack.prototype.setListeners = normalSteListenerTrack
+        SliderThumb.prototype.setListeners = normalSteListenerThumb
+        SliderScale.prototype.setListeners = normalSteListenerScale
       })
     })
 
     describe('Тестирование метода positionHandler. Метод обрабатывает данные о событиях мыши на элементе '+
-    '(относительные координаты курсора - в долях от единицы, и тип события).', ()=> {
-      
+    '(относительные координаты курсора - в долях от единицы, и тип события).', ()=> {      
 
       it('Обработка события перемещения курсора мыши на позицию "0.3" (событие mousemove), '+
         'слайдер работает в режиме выбора единичного значения', ()=> {
@@ -579,7 +633,8 @@ describe('Тестирование методов класса и подклас
         testView.sliderThumbs[0].htmlObject.dataset.position = '0.1';
         testView.activeThumb = testView.sliderThumbs[0];
         testView.positionHandler(0.3, 'mousemove');
-        expect(spy.args[0][0]).to.deep.equal([0.3]);        
+        expect(spy.args[0][0]).to.deep.equal(0.3);
+        expect(spy.args[0][1]).to.deep.equal(0);             
       })
 
       it('Обработка события перемещения курсора мыши на позицию "0.6" (событие mousemove), '+
@@ -593,7 +648,8 @@ describe('Тестирование методов класса и подклас
         testView.sliderThumbs[1].htmlObject.dataset.position = '0.4';
         testView.activeThumb = testView.sliderThumbs[1];
         testView.positionHandler(0.6, 'mousemove');
-        expect(spy.args[0][0]).to.deep.equal([0.1, 0.6]);        
+        expect(spy.args[0][0]).to.deep.equal(0.6);
+        expect(spy.args[0][1]).to.deep.equal(1);        
       })
 
       it('Обработка события опускания кнопки мыши над элементом на позиции "0.2" (событие mousedown)', ()=> {
@@ -601,7 +657,8 @@ describe('Тестирование методов класса и подклас
         let spy = sinon.spy();
         testView.externalHandler = spy;
         testView.positionHandler(0.2, 'mousedown');
-        expect(spy.args[0][0]).to.deep.equal([0.2]);        
+        expect(spy.args[0][0]).to.deep.equal(0.2);
+        assert.equal(spy.args[0].length, 1);       
       })
     })
 
@@ -613,6 +670,40 @@ describe('Тестирование методов класса и подклас
         let testThumb: SliderThumb  =new SliderThumb('thumb', 'thumb', rootHTML);
         testView.setActiveThumb(testThumb);
         assert.equal(testView.activeThumb, testThumb);
+      })
+    })
+
+    describe('Тестирование метода getSliderSize(verical?: boolean): number, '+
+    'возвращающего габарит слайдера (ширину при горизонтальном виде слайдера или при передаче методу аргумента verical = true, '+
+    'высоту - при вертикальном виде слайдера или при передаче методу аргумента verical = false)',()=> {
+      let testView = new View();
+      let sliderHTMLObject = document.createElement('div');
+      testView.sliderTrack = sinon.createStubInstance(SliderTrack);
+      rootHTML.appendChild(sliderHTMLObject);
+      testView.sliderTrack.htmlObject = sliderHTMLObject;
+
+      it('Тестирование при горизонтальном виде слайдера', ()=> {
+        sliderHTMLObject.style.width = '500px';
+        testView.verticalView = false;
+        assert.equal(testView.getSliderSize(), 500);
+      })
+
+      it('Тестирование при вертикальном виде слайдера', ()=> {
+        sliderHTMLObject.style.height = '750px';
+        testView.verticalView = true;
+        assert.equal(testView.getSliderSize(), 750);
+      })
+
+      it('Тестирование при передаче методу аргумента verical = true', ()=> {
+        sliderHTMLObject.style.height = '420px';
+        testView.verticalView = false;
+        assert.equal(testView.getSliderSize(true), 420);
+      })
+
+      it('Тестирование при передаче методу аргумента verical = false', ()=> {
+        sliderHTMLObject.style.width = '635px';
+        testView.verticalView = false;
+        assert.equal(testView.getSliderSize(false), 635);
       })
     })
   })
