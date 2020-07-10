@@ -71,7 +71,7 @@ describe('Проверка методов класса Presenter', ()=> {
       let testPresenter: Presenter = new Presenter(testOptions, testView, testModel);
       let correctAnsver: {} = {0: 500, 0.2: 700, 0.4: 900, 0.6: 1100, 0.8: 1300, 1: 1500};
       
-      assert.deepEqual(testPresenter.getScaleData(true), correctAnsver);
+      assert.deepEqual(testPresenter.getScaleData(), correctAnsver);
     })
 
     it('Проверка работоспособности метода при наличии шаблона шкалы слайдера. '+
@@ -84,12 +84,12 @@ describe('Проверка методов класса Presenter', ()=> {
         minPossibleValue: 500,
         maxPossibleValue: 1500        
       }
-      sinon.spy(HTMLElement.prototype, '');
+      //sinon.spy(HTMLElement.prototype, '');
       let noNumericScale:{} = {'один': 0, 'два': 1, 'три': 1, 'четыре': 1, 'пять': 1, 'девять': 4, 'десять': 1, 'одиннадцать': 1};
       let testPresenter: Presenter = new Presenter(testOptions, testView, testModel);
       let correctAnsver: {} = {0: 'один', 0.1: 'два', 0.2: 'три', 0.3: 'четыре', 0.4: 'пять', 0.8: 'девять', 0.9: 'десять', 1: 'одиннадцать'};
       
-      assert.deepEqual(testPresenter.getScaleData(false, noNumericScale), correctAnsver);
+      assert.deepEqual(testPresenter.getScaleData(noNumericScale), correctAnsver);
     })
   })
 
@@ -112,6 +112,31 @@ describe('Проверка методов класса Presenter', ()=> {
 
     it('Проверка 3. Аргумент метода равен "0.93"', ()=> {
       assert.equal(testPresenter.getStringData(0.92), 'шесть');
+    })
+
+  })
+
+  describe('Проверка метода checkChangeScale():boolean, '+
+    'проверяющего габариты слайдера на случай необходимости изменения конфигурации шкалы слайдера', function() {
+    let testingData = [[6, 600, 65, true], [7, 460, 65, false], [8, 810, 100, false], [3, 400, 50, true]];
+    testingData.forEach(function(value, index) {
+      
+      let fakeView;
+      let fakeModel: Model;
+      let testPresenter: Presenter;
+
+      it('Проверка ' + index, function() { 
+        fakeView = sinon.createStubInstance(View);
+        fakeView.getSliderSize.returns(value[1]);
+        fakeModel = sinon.createStubInstance(Model);
+        testPresenter = new Presenter({}, fakeView, fakeModel);
+        testPresenter.scalePointCount = value[0] as number;       
+        testPresenter.scaleTick = value[2] as number;        
+              
+        assert.equal(testPresenter.checkChangeScale(), value[3] as boolean);
+        
+        sinon.restore();
+      })
     })
 
   })
