@@ -13,7 +13,8 @@ export class Presenter {
   noNumericScale: {};
   view: View;
   model: Model;
-
+  scalePointCount: number;
+  scaleTick: number = 65;
   constructor(options: SliderOptions, view: View, model: Model) {
     //view.init(options.rangeMode, options.feedBack, options.verticalView, undefined, options.useScale);
     this.minPossibleValue = options.minPossibleValue;
@@ -89,13 +90,20 @@ export class Presenter {
     }
   }
 
-  getScaleData(verticalView: boolean, sliderTemplate?: {}): {} { //tested
+  resizeHandler(): void {
+    if (this.checkChangeScale()) {
+      this.view.removeScale();
+      this.view.setScale(this.getScaleData())
+    }
+  }
+
+  getScaleData(sliderTemplate?: {}): {} { //tested
     let sliderSize: number = this.view.getSliderSize();
     
     let result: {} = {};
     if (!sliderTemplate) {
-      let markCount: number = sliderSize / 65;
-      
+      let markCount: number = Math.floor(sliderSize / this.scaleTick);
+      this.scalePointCount = markCount;
       for (let i = 0; i <= markCount; i++) {
         result[i/markCount] = Math.round(this.minPossibleValue + this.rangePossibleValues / markCount * i);
       }
@@ -115,8 +123,8 @@ export class Presenter {
     return result;
   }
 
-  getAbsoluteData(value: number[]): number[]|string[];
-  getAbsoluteData(value: number): number|string;
+  /*getAbsoluteData(value: number[]): number[]|string[];
+  getAbsoluteData(value: number): number|string;*/
   getAbsoluteData(value: number[]|number): number[]|number|string|string[]{ //tested
     
     if (!this.noNumericValues) {
@@ -146,8 +154,8 @@ export class Presenter {
     }
   }
 
-  getRelativeData(value: number[]): number[];
-  getRelativeData(value: number): number;
+  /*getRelativeData(value: number[]): number[];
+  getRelativeData(value: number): number;*/
   getRelativeData(value: number[]| number): number[]|number { //tested
     if (value instanceof Array) {
       let result: number[] = [];
@@ -179,5 +187,13 @@ export class Presenter {
         }        
       }    
     }
+  }
+
+  checkChangeScale():boolean { //tested
+    
+    if (Math.floor(this.view.getSliderSize() / this.scaleTick) != this.scalePointCount) {
+      return true;
+    }
+    return false;
   }
 }
