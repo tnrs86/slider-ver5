@@ -63,7 +63,8 @@ export class View {
   }
 
   removeScale(): void {
-
+    this.sliderScale.removeHTMLElement();
+    this.sliderScale = undefined;
   }
 
   setSliderOrientation(verticalView: boolean, sliderElement?: PageElement ): void { //tested
@@ -115,6 +116,7 @@ export class View {
 
   setListeners(externalHandler: Function): void { //tested
     this.externalHandler = externalHandler;
+    window.addEventListener('resize', ()=> { })
     
     if (this.sliderTrack && this.sliderThumbs[0]) {
        
@@ -143,11 +145,6 @@ export class View {
         let index: number;
         index = this.sliderThumbs.indexOf(this.activeThumb);
         this.externalHandler(position, index);
-        /*this.activeThumb.setPositionAttribute(position);
-        
-        this.sliderThumbs.forEach((thumb)=> {
-          results.push(+thumb);
-        })*/
       }
     } else if (eventType == 'mousedown') {
       results.push(position);
@@ -216,6 +213,10 @@ export class PageElement {
 
   changeOrientation(verticalView: boolean): void {//testetd
     this.verticalView = verticalView;
+  }
+
+  removeHTMLElement(): void { //tested
+    this.htmlObject.remove();
   }
 }
 
