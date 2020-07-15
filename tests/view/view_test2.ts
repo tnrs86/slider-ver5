@@ -465,7 +465,7 @@ describe('Тестирование методов класса и подклас
       })
     })
 
-    describe('Проверка свойства setSliderOrientation(verticalView: boolean, sliderElement?: PageElement ): void, '+
+    describe('Проверка свойства setSliderOrientation(verticalView?: boolean, sliderElement?: PageElement ): void, '+
       'устанавливающего ориентацию для слайдера и его дочерних элементов', ()=> {
       it('Провека при конфигурации слайдера: выбор диапазона + отображение шкалы + без фидбеков', ()=> {
         let testView: View = new View();
@@ -507,11 +507,26 @@ describe('Тестирование методов класса и подклас
 
       it('Проверка при указании аргумента sliderElement. В данном случае меняется ориентация только указанного элемента', ()=> {
         let testView: View = new View();
-        testView.sliderScale = sinon.createStubInstance(SliderScale);
+        testView.sliderScale = new SliderScale('scale', 'scale', rootHTML, {});
         let stub = sinon.stub(SliderScale.prototype, 'changeOrientation');
-        testView.setSliderOrientation(true, testView.sliderScale)
+        testView.setSliderOrientation(true, testView.sliderScale);        
+        
+        assert.equal(stub.callCount, 1);
         
         stub.restore();
+      })
+
+      it('Проверка при вызове метода с аргументом verticalView = undefined', ()=> {
+        let testView: View = new View();
+        testView.sliderScale = new SliderScale('scale', 'scale', rootHTML, {});
+        let stub = sinon.stub(SliderScale.prototype, 'changeOrientation');
+        testView.verticalView = true;
+        testView.setSliderOrientation(undefined, testView.sliderScale);        
+        
+        assert.equal(stub.callCount, 1);
+        assert.equal(stub.args[0][0], true);
+
+        stub.restore();        
       })
 
     })
@@ -589,15 +604,17 @@ describe('Тестирование методов класса и подклас
     describe('Тестирование метода setListeners, устанавливающего слушатели на события дочерних элементов View', ()=> {
       it('Проверка передачи свойству externalHandler экземпляра класса View ссылки на внешний обработчик данных (из Presenter)', ()=> {
         let testView = new View();
-        let externalListener: Function = ()=> {return };
-        testView.setListeners(externalListener);
+        let positionHandler: Function = ()=>{return}; //простейшая функция нужна для работы assert
+        let resizeHandler: Function = ()=>{return};
+        testView.setListeners(positionHandler, resizeHandler);
 
-        assert.isFunction(testView.externalHandler)
+        assert.isFunction(testView.externalPositionHandler);
       })
 
       it('Проверка количества вызовов методов дочерних элементов', ()=> {
         let testView = new View();
-        let externalListener: Function;
+        let postionHandler: Function;
+        let resizeHandler: Function = ()=>{return};
         testView.sliderTrack = new SliderTrack('track', 'track', rootHTML);
         testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML));
         testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML));
@@ -612,7 +629,7 @@ describe('Тестирование методов класса и подклас
         let normalSteListenerScale = SliderScale.prototype.setListeners;
         SliderScale.prototype.setListeners = spy;
         
-        testView.setListeners(externalListener);
+        testView.setListeners(postionHandler, resizeHandler);
         
         assert.equal(spy.callCount, 4);
         SliderTrack.prototype.setListeners = normalSteListenerTrack
@@ -628,7 +645,7 @@ describe('Тестирование методов класса и подклас
         'слайдер работает в режиме выбора единичного значения', ()=> {
         let testView = new View();
         let spy = sinon.spy();
-        testView.externalHandler = spy;
+        testView.externalPositionHandler = spy;
         testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML));
         testView.sliderThumbs[0].htmlObject.dataset.position = '0.1';
         testView.activeThumb = testView.sliderThumbs[0];
@@ -641,7 +658,7 @@ describe('Тестирование методов класса и подклас
       'слайдер работает в режиме выбора диапазона', ()=> {
         let testView = new View();
         let spy = sinon.spy();
-        testView.externalHandler = spy;
+        testView.externalPositionHandler = spy;
         testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML));
         testView.sliderThumbs[0].htmlObject.dataset.position = '0.1';
         testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML));
@@ -655,7 +672,7 @@ describe('Тестирование методов класса и подклас
       it('Обработка события опускания кнопки мыши над элементом на позиции "0.2" (событие mousedown)', ()=> {
         let testView = new View();
         let spy = sinon.spy();
-        testView.externalHandler = spy;
+        testView.externalPositionHandler = spy;
         testView.positionHandler(0.2, 'mousedown');
         expect(spy.args[0][0]).to.deep.equal(0.2);
         assert.equal(spy.args[0].length, 1);       
