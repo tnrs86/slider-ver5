@@ -58,7 +58,7 @@ export class Presenter {
     this.view.setSliderOrientation(verticalView); 
     
     if (useScale) {      
-      let scaleData: {} = this.getScaleData(verticalView, sliderTemplate);
+      let scaleData: {} = this.getScaleData(sliderTemplate);
       
       if (this.noNumericValues && sliderTemplate) {
         this.noNumericScale = scaleData;
@@ -70,7 +70,7 @@ export class Presenter {
       this.view.setSliderOrientation(verticalView, this.view.sliderScale);
     }   
     
-    this.view.setListeners(this.positionHandler.bind(this));
+    this.view.setListeners(this.positionHandler.bind(this), this.resizeHandler.bind(this));
 
     this.view.setElementPositions(relativeCurrentValue); 
     
@@ -93,7 +93,8 @@ export class Presenter {
   resizeHandler(): void {
     if (this.checkChangeScale()) {
       this.view.removeScale();
-      this.view.setScale(this.getScaleData())
+      this.view.setScale(this.getScaleData());
+      this.view.setSliderOrientation(undefined, this.view.sliderScale);
     }
   }
 
@@ -191,6 +192,10 @@ export class Presenter {
 
   checkChangeScale():boolean { //tested
     
+    if (this.noNumericScale) {
+      return false;
+    }
+
     if (Math.floor(this.view.getSliderSize() / this.scaleTick) != this.scalePointCount) {
       return true;
     }
