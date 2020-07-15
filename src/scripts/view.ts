@@ -11,8 +11,8 @@ export class View {
   sliderFiller: SliderFiller;
   sliderScale: SliderScale;
   activeThumb: SliderThumb;
-  externalHandler: Function;
-  //elementsCollection: PageElement[] = []; 
+  externalPositionHandler: Function;
+  controlPanel: ControlPanel;
   parentElement: HTMLElement;
   /*constructor() {
     this.parentElement = parentElement;
@@ -62,12 +62,21 @@ export class View {
     this.sliderScale = new SliderScale('scale', 'slider__scale', this.slider.htmlObject, scaleData);
   }
 
-  removeScale(): void {
+  removeScale(): void { //tested
     this.sliderScale.removeHTMLElement();
     this.sliderScale = undefined;
   }
 
-  setSliderOrientation(verticalView: boolean, sliderElement?: PageElement ): void { //tested
+  setSliderOrientation(verticalView?: boolean, sliderElement?: PageElement ): void { //tested w bags
+    console.log( typeof verticalView )
+    if (typeof verticalView === 'undefined') {
+      if (typeof this.verticalView !== 'undefined') {
+        verticalView = this.verticalView;        
+      } else {
+        // bag
+        return;
+      }
+    }
 
     if (sliderElement) {
       
@@ -114,9 +123,12 @@ export class View {
     }
   }
 
-  setListeners(externalHandler: Function): void { //tested
-    this.externalHandler = externalHandler;
-    window.addEventListener('resize', ()=> { })
+  setListeners(positionHandler: Function, resizeHandler: Function): void { //tested
+    this.externalPositionHandler = positionHandler;
+    
+    window.addEventListener('resize', ()=> { 
+      resizeHandler();
+    })
     
     if (this.sliderTrack && this.sliderThumbs[0]) {
        
@@ -144,11 +156,11 @@ export class View {
       if (this.activeThumb) {
         let index: number;
         index = this.sliderThumbs.indexOf(this.activeThumb);
-        this.externalHandler(position, index);
+        this.externalPositionHandler(position, index);
       }
     } else if (eventType == 'mousedown') {
       results.push(position);
-      this.externalHandler(position);
+      this.externalPositionHandler(position);
     } else {
 
     }    
@@ -421,3 +433,4 @@ export class SliderScale extends PageElement {
     }
   }
 }
+
