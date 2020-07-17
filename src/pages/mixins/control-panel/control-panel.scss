@@ -1,0 +1,20 @@
+.control-panel {
+  border: 1px solid black;
+  width: 270px;
+  padding: 5px;
+}
+
+.control-panel__label-value {
+  width: 45%;
+  max-width: 150px;
+}
+
+.control-panel__label-param {
+  display: flex;
+  margin-top: 5px;    
+}
+
+.control-panel__input {
+  display: inline;
+  margin: 0px 5px 0px 0px;  
+}

@@ -1,0 +1,28 @@
+mixin controlPanel(firstInput, secondInput)
+  form(action="#" name="control-panel").control-panel
+    label.control-panel__label-value Текущие значения
+      .control-panel__wrapper
+        input(type="text" name="start" id= firstInput).control-panel__input
+        input(type="text" name="end" id= secondInput).control-panel__input
+    label.control-panel__label-param Параметры
+    label.control-panel__label-param
+      input(type="text" name="min-value").control-panel__input
+      | Мин. значение
+    label.control-panel__label-param
+      input(type="text" name="max-value").control-panel__input
+      | Макс. значение
+    label.control-panel__label-param
+      input(type="text" name="step").control-panel__input
+      | Шаг
+    label.control-panel__label-param
+      input(type="checkbox" name="scale").control-panel__input
+      | Использовать шкалу
+    label.control-panel__label-param
+      input(type="checkbox" name="vertical").control-panel__input
+      | Вертикальный вид
+    label.control-panel__label-param
+      input(type="checkbox" name="feedback").control-panel__input
+      | Фидбеки
+    label.control-panel__label-param
+      input(type="checkbox" name="range-mode").control-panel__input
+      | Выбор диапазона
