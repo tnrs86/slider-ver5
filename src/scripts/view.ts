@@ -45,20 +45,28 @@ export class View {
     } 
   }
 
+  setSingleMode(): void {
+    this.rangeMode = false;
+    this.sliderThumbs[1].removeHTMLElement(); //no tested
+    this.sliderThumbs.length = 1;
+    this.sliderFiller.removeHTMLElement(); //no tested
+    this.sliderFiller = undefined;
+  }
   setThumbFeedbacks(): void { //tested
-    
+    this.useFeedback = true;
     this.sliderThumbs.forEach((thumb)=>{      
       thumb.manageFeedback(true);     
     })    
   }
 
   removeThumbFeedback(): void {
+    this.useFeedback = false;
     this.sliderThumbs.forEach((thumb)=>{      
       thumb.manageFeedback(false);     
     })   
   }
 
-  setScale(scaleData:{}): void { //tested
+  setScale(scaleData:{}): void { //tested    
     this.sliderScale = new SliderScale('scale', 'slider__scale', this.slider.htmlObject, scaleData);
   }
 
@@ -192,6 +200,26 @@ export class View {
 
   dataConverter() {
     //перевод величин из px в %, используется в eventHandler
+  }
+
+  setControlPanel(parentElement: HTMLElement, input1?: HTMLInputElement, input2?: HTMLInputElement) {
+    this.controlPanel = new ControlPanel(parentElement, input1, input2);
+  }
+
+  setControlPanelValues(value: string, index: number) {
+    this.controlPanel.setValue(value, index)
+  }
+
+  setControlPanelParameters(param: {}) {
+    this.controlPanel.setParameters(param);
+  }
+
+  setControlPanelListener(dataHandler: Function) {
+    this.controlPanel.setListeners(dataHandler);
+  }
+
+  setExternalRecieversListener(dataHandler: Function) {
+    //this.controlPanel.setListeners(dataHandler);
   }
 }
 
@@ -434,3 +462,64 @@ export class SliderScale extends PageElement {
   }
 }
 
+export class ControlPanel {
+  externalRecievers: HTMLInputElement[] = [];  
+  elements: HTMLInputElement[];
+  formObject: HTMLFormElement;
+  constructor(parent: HTMLElement, input1?: HTMLInputElement, input2?: HTMLInputElement) {
+    
+    if (input1) {
+      this.externalRecievers.push(input1);
+    }
+
+    if (input2) {
+      this.externalRecievers.push(input2);
+    }
+    
+    //получить перечень элементов
+    
+    this.formObject = parent.parentElement.querySelector('form[name="control-panel"') as HTMLFormElement;
+    this.elements = Array.from(this.formObject.getElementsByClassName('control-panel__input')) as HTMLInputElement[];
+  }
+
+  setListeners(eventHandler: Function) {
+    this.elements.forEach((element)=> {      
+      element.onchange = ()=> {
+        let value: number|boolean;
+        if (element.type == 'checkbox') {
+          value = element.checked;
+        } else {
+          value = parseFloat(element.value);
+        }
+        eventHandler(value, element.name);
+      }
+    })
+    /*this.externalRecievers.forEach((reciever, index)=> {
+      
+      reciever.onchange = ()=> {
+        console.log('change')
+        eventHandler(reciever.value, index);
+      }
+    })*/
+  }
+
+  setValue(value: string, index: number) {
+    this.externalRecievers[index].value = value
+  }
+
+  setParameters(value: {}) {
+    Object.keys(value).forEach((key)=> {
+      let currentInput: HTMLInputElement = this.formObject.querySelector(`input[name="${key}"]`);
+      if (currentInput.type == 'checkbox') {
+        currentInput.checked = value[key];
+      } else {
+        currentInput.value = value[key];
+      }      
+    })
+  }
+ 
+  getElements(): {} {
+    return this.elements;
+  }
+
+}
