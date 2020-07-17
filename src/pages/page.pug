@@ -1,0 +1,24 @@
+include ../pages/mixins/control-panel/control-panel.pug
+
+<!DOCTYPE html>
+html(lang="en")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport", content="width=device-width, initial-scale=1.0")
+    title Document
+    link(rel="stylesheet", href="../styles/style.scss")
+    link(rel="stylesheet", href="../pages/mixins/control-panel/control-panel.scss")
+    <script src="../scripts/app.ts"></script>
+  body
+    .container
+      .slider-wrapper#div1
+      .control-wrapper
+        +controlPanel("first-input", "second-input")
+    .container
+      .slider-wrapper#div2
+      .control-wrapper
+        +controlPanel("third-input", "fourth-input")
+    .container
+      .slider-wrapper#div4
+      .control-wrapper
+        +controlPanel("fifth-input", "sixth-input")
