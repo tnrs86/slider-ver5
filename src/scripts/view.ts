@@ -34,13 +34,13 @@ export class View {
   setBaseConfiguration(parentElement: HTMLElement): void { //tested
     this.slider = new Slider('slider', 'slider', parentElement);
     this.sliderTrack = new SliderTrack('track', 'slider__track', this.slider.htmlObject);    
-    this.sliderThumbs.push(new SliderThumb('thumb', 'slider__thumb', this.sliderTrack.htmlObject));
+    this.sliderThumbs.push(new SliderThumb('thumb', 'slider__thumb', this.sliderTrack.htmlObject, this.setActiveThumb.bind(this)));
   }
 
   setRangeMode(): void {//tested
     if (!this.rangeMode) {
       this.rangeMode = true;
-      this.sliderThumbs.push(new SliderThumb('thumb', 'slider__thumb', this.sliderTrack.htmlObject));
+      this.sliderThumbs.push(new SliderThumb('thumb', 'slider__thumb', this.sliderTrack.htmlObject, this.setActiveThumb.bind(this)));
       this.sliderFiller = new SliderFiller('filler', 'slider__filler', this.sliderTrack.htmlObject);
     } 
   }
@@ -76,7 +76,7 @@ export class View {
   }
 
   setSliderOrientation(verticalView?: boolean, sliderElement?: PageElement ): void { //tested w bags
-    console.log( typeof verticalView )
+    
     if (typeof verticalView === 'undefined') {
       if (typeof this.verticalView !== 'undefined') {
         verticalView = this.verticalView;        
@@ -141,9 +141,9 @@ export class View {
     if (this.sliderTrack && this.sliderThumbs[0]) {
        
       this.sliderTrack.setListeners(this.positionHandler.bind(this), this.setActiveThumb.bind(this));
-      this.sliderThumbs.forEach((thumb)=>{
+      /*this.sliderThumbs.forEach((thumb)=>{
         thumb.setListeners(this.setActiveThumb.bind(this));
-      })
+      })*/
 
       if (this.sliderScale) {
         this.sliderScale.setListeners(this.positionHandler.bind(this));
@@ -152,6 +152,24 @@ export class View {
     } else {
       //bug!!
     }
+  }
+
+  setElementListener(element: PageElement | HTMLElement, handler: Function, event: string): void { //tested
+    let desiredElement: HTMLElement;
+    
+    if (element instanceof PageElement) {
+      desiredElement = element.htmlObject;
+    } else if (element instanceof HTMLElement) {
+      desiredElement = element;
+    }
+
+    if (typeof desiredElement[event] === 'object') {
+      desiredElement[event] = handler;
+    } else {
+      //bug
+    }
+    
+    
   }
 
   positionHandler(position: number, eventType: string): void {
@@ -312,8 +330,14 @@ export class ThumbFeedback extends PageElement {
 
 export class SliderThumb extends PageElement {
   feedback: ThumbFeedback;
-  feedbackClassName: string = 'thumb__feedback';  
+  feedbackClassName: string = 'thumb__feedback';
+  constructor(name: string, className: string, parent: HTMLElement, clickEvent: Function) {
+    super(name, className, parent);
+
+    this.setListeners(clickEvent);
+  }
   setListeners(eventHandler: Function): void { //tested!? (no tested interfaces)
+    
     this.htmlObject.onmousedown = ()=> {      
       eventHandler(this);
     }
@@ -373,7 +397,7 @@ export class SliderThumb extends PageElement {
     return parseFloat(this.htmlObject.dataset.position);
   }
 
-  [Symbol.toPrimitive] = function(hint: string): string | number { //tested
+  /*[Symbol.toPrimitive] = function(hint: string): string | number { //tested
 
     if (hint == 'number') {      
       if (this.htmlObject.dataset.position) {
@@ -384,7 +408,7 @@ export class SliderThumb extends PageElement {
     } else {
       return this.name;
     }    
-  }
+  }*/
 }
 
 export class SliderFiller extends PageElement {
@@ -497,7 +521,7 @@ export class ControlPanel {
     /*this.externalRecievers.forEach((reciever, index)=> {
       
       reciever.onchange = ()=> {
-        console.log('change')
+        
         eventHandler(reciever.value, index);
       }
     })*/
