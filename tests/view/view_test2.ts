@@ -4,7 +4,7 @@ import { expect, assert, Assertion } from 'chai';
 import * as sinon from 'sinon';
 let chai = require('chai');
 chai.use(require('sinon-chai'));
-import { View, PageElement, Slider, SliderTrack, SliderThumb, SliderFiller, ThumbFeedback, SliderScale } from '../../src/scripts/view';
+import { View, PageElement, Slider, SliderTrack, SliderThumb, SliderFiller, ThumbFeedback, SliderScale, ControlPanel } from '../../src/scripts/view';
 import { Presenter } from '../../src/scripts/presenter';
 import { after } from 'mocha';
 
@@ -409,6 +409,24 @@ describe('Тестирование методов класса и подклас
       })
     })
 
+    describe('Тестирование метода setSingleMode(): void, переводящего слайдер в режим выбора единичного значения. '+
+    'Метод удаляет лишние элементы слайдера', ()=> {
+      it('Тест 1', ()=> {
+        let testView: View = new View();
+        testView.rangeMode = true;
+        let testThumb1: SliderThumb = sinon.createStubInstance(SliderThumb);
+        testView.sliderThumbs.push(testThumb1);
+        let testThumb2: SliderThumb  = sinon.createStubInstance(SliderThumb);
+        testView.sliderThumbs.push(testThumb2);
+        let testFiller: SliderFiller = sinon.createStubInstance(SliderFiller);
+        testView.sliderFiller = testFiller;
+        testView.setSingleMode();
+        assert.isFalse(testView.rangeMode);
+        assert.equal(testView.sliderThumbs.length, 1);
+        assert.isUndefined(testView.sliderFiller);
+      })
+    })
+
     describe('Тестирование метода setThumbFeedbacks, добавляющего отображение текущих значений над бегунками (далее - фидбеки). '+
     'Метод вызывает соответствующий метод класса SliderThumb для каждого экземпляра класса SliderThumb', ()=> {
       let thumbsCountCollection: number[] = [1, 2, 6];
@@ -721,6 +739,43 @@ describe('Тестирование методов класса и подклас
         sliderHTMLObject.style.width = '635px';
         testView.verticalView = false;
         assert.equal(testView.getSliderSize(false), 635);
+      })
+    })
+  })
+  
+  describe('Тестирование контрольной панели', ()=> {
+    let testPanelHTML: HTMLFormElement = document.createElement('form');
+    testPanelHTML.name = 'control-panel';
+    rootHTML.appendChild(testPanelHTML);
+    
+    let testInputText1: HTMLInputElement = document.createElement('input');
+    testInputText1.name = 'min-value';
+    testPanelHTML.appendChild(testInputText1);
+    
+    let testInputText2: HTMLInputElement = document.createElement('input');
+    testInputText2.name = 'max-value';
+    testPanelHTML.appendChild(testInputText2);
+    
+    let testInputCheck1: HTMLInputElement = document.createElement('input');
+    testInputCheck1.name = 'cb1';
+    testInputCheck1.type = 'checkbox';
+    testPanelHTML.appendChild(testInputCheck1);
+    
+    let testInputCheck2: HTMLInputElement = document.createElement('input');
+    testInputCheck2.name = 'cb2';
+    testInputCheck2.type = 'checkbox';
+    testPanelHTML.appendChild(testInputCheck2);
+
+    describe('Тестирование метода setParameters(value: {})', ()=> {
+      it('Тест 1', ()=> {
+        let value: {} = {'min-value': 100, 'max-value': 300, 'cb1': true, 'cb2': false};
+        let testPanel: ControlPanel = new ControlPanel(rootHTML);
+        testPanel.setParameters(value);
+
+        assert.equal(testInputText1.value, '100');
+        assert.equal(testInputText2.value, '300');
+        assert.equal(testInputCheck1.checked, true);
+        assert.equal(testInputCheck2.checked, false);
       })
     })
   })
