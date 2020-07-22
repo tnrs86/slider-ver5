@@ -8,13 +8,15 @@ import { View, PageElement, Slider, SliderTrack, SliderThumb, SliderFiller, Thum
 
 import { JSDOM } from 'jsdom';
 const { window } = new JSDOM(`<!DOCTYPE html><p>Hello world</p>`);
-const { document } = (new JSDOM('')).window;
+
+const { document } = (new JSDOM('<!DOCTYPE html><body><p>Hello world</p></body></html>')).window;
+
 global.document = document;
 global.window = document.defaultView;
 global.HTMLElement = document.defaultView.HTMLElement;
 
 let rootHTML: HTMLElement = document.createElement('div');
-(document.getElementsByTagName('body')[0] as HTMLElement).appendChild(rootHTML) ;
+document.getElementsByTagName('body')[0].appendChild(rootHTML);
 rootHTML.style.width = '400px';
 rootHTML.style.height = '500px';
 
@@ -732,37 +734,31 @@ describe('Тестирование методов класса и подклас
     })
 
     describe('Тестирование метода getSliderSize(verical?: boolean): number, '+
-    'возвращающего габарит слайдера (ширину при горизонтальном виде слайдера или при передаче методу аргумента verical = true, '+
-    'высоту - при вертикальном виде слайдера или при передаче методу аргумента verical = false)',()=> {
+    'возвращающего габарит слайдера (ширину при горизонтальном виде слайдера или при передаче методу аргумента vertical = true, '+
+    'высоту - при вертикальном виде слайдера или при передаче методу аргумента vertical = false)',()=> {
       let testView = new View();
       let sliderHTMLObject = document.createElement('div');
       testView.sliderTrack = sinon.createStubInstance(SliderTrack);
       rootHTML.appendChild(sliderHTMLObject);
       testView.sliderTrack.htmlObject = sliderHTMLObject;
+      let indexTestData: number;
+      let testData: {}[] = [
+        {descriptor: 'Тестирование при горизонтальном виде слайдера', vertical: false, arg: undefined, width: 500, height: 30, ansv: 500},
+        {descriptor: 'Тестирование при вертикальном виде слайдера', vertical: true, arg: undefined, width: 30, height: 750, ansv: 750},
+        {descriptor:'Тестирование при передаче методу аргумента vertical = true', vertical: false, arg: true, width: 30, height: 420, ansv: 420},
+        {descriptor: 'Тестирование при передаче методу аргумента vertical = false', vertical: false, arg: false, width: 635, height: 30, ansv: 635}]
 
-      it('Тестирование при горизонтальном виде слайдера', ()=> {
-        sliderHTMLObject.style.width = '500px';
-        testView.verticalView = false;
-        assert.equal(testView.getSliderSize(), 500);
+      testData.forEach((data, index)=>{
+
+        it(data['descriptor'], ()=> {
+          sinon.stub(HTMLElement.prototype, 'clientWidth').value(data['width']);
+          sinon.stub(HTMLElement.prototype, 'clientHeight').value(data['height']);
+          testView.verticalView = data['vertical'];
+          assert.equal(testView.getSliderSize(data['arg']), data['ansv']);  
+          sinon.restore()
+        })
       })
 
-      it('Тестирование при вертикальном виде слайдера', ()=> {
-        sliderHTMLObject.style.height = '750px';
-        testView.verticalView = true;
-        assert.equal(testView.getSliderSize(), 750);
-      })
-
-      it('Тестирование при передаче методу аргумента verical = true', ()=> {
-        sliderHTMLObject.style.height = '420px';
-        testView.verticalView = false;
-        assert.equal(testView.getSliderSize(true), 420);
-      })
-
-      it('Тестирование при передаче методу аргумента verical = false', ()=> {
-        sliderHTMLObject.style.width = '635px';
-        testView.verticalView = false;
-        assert.equal(testView.getSliderSize(false), 635);
-      })
     })
   })
   
