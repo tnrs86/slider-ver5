@@ -55,7 +55,7 @@ const appConfig = {
   ],
 };
 
-const testConfigMocha = {
+const testConfigView = {
   mode: 'development',
   entry: './tests/view/view_test2.ts', // <=== can be omitted as default is 'web'
   output: {
@@ -72,7 +72,7 @@ const testConfigMocha = {
         loader: 'ts-loader'
       },
       {
-        test: /\.js$|\.jsx$/,
+        test: /\.tsx?$/,
         use: {
           loader: 'istanbul-instrumenter-loader',
           options: { esModules: true }
@@ -96,4 +96,75 @@ const testConfigMocha = {
 
 };
 
-module.exports = [ testConfigMocha ];
+const testConfigPresenter = {
+  mode: 'development',
+  entry: './tests/presenter/presenter_test.ts', // <=== can be omitted as default is 'web'
+  output: {
+    path: path.resolve(__dirname, 'test'),
+    filename: 'presenter.test.js'    
+  },
+  resolve: {
+    extensions: ['.ts', '.tsx', '.js']
+  },
+  module: {
+    rules: [
+      {
+        test: /\.tsx?$/,
+        loader: 'ts-loader'
+      },
+      {
+        test: /\.tsx?$/,
+        use: {
+          loader: 'istanbul-instrumenter-loader',
+          options: { esModules: true }
+        },
+        enforce: 'post',
+        exclude: /node_modules|\.spec\.js$/,
+      }
+    ]
+  },
+  node: {
+    module: "empty",
+    fs: "empty",
+    child_process: "empty"
+  },
+  externals: {    
+    jsdom: 'require("jsdom")'
+  }
+};
+
+const testConfigModel = {
+  mode: 'development',
+  entry: './tests/model/model_test.ts', // <=== can be omitted as default is 'web'
+  output: {
+    path: path.resolve(__dirname, 'test'),
+    filename: 'model.test.js'    
+  },
+  resolve: {
+    extensions: ['.ts', '.tsx', '.js']
+  },
+  module: {
+    rules: [
+      {
+        test: /\.tsx?$/,
+        loader: 'ts-loader'
+      },
+      {
+        test: /\.tsx?$/,
+        use: {
+          loader: 'istanbul-instrumenter-loader',
+          options: { esModules: true }
+        },
+        enforce: 'post',
+        exclude: /node_modules|\.spec\.js$/,
+      }
+    ]
+  },
+  node: {
+    module: "empty",
+    fs: "empty",
+    child_process: "empty"
+  }
+};
+
+module.exports = [ testConfigPresenter ];
