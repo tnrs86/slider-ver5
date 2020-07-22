@@ -17,7 +17,7 @@ export class Presenter {
   scalePointCount: number;
   scaleTick: number = 65;
   constructor(options: SliderOptions, view: View, model: Model) {
-    //view.init(options.rangeMode, options.feedBack, options.verticalView, undefined, options.useScale);
+
     this.minPossibleValue = options.minPossibleValue;
     this.maxPossibleValue = options.maxPossibleValue;
     this.rangePossibleValues = this.maxPossibleValue - this.minPossibleValue;
@@ -94,10 +94,10 @@ export class Presenter {
     this.view.setControlPanelListener(this.controlDataHandler.bind(this));
   }
 
-  positionHandler(position: number, index?: number) {
+  positionHandler(position: number, index?: number): void { //не доделано! что будет если не передать индекс???!!!
     let currentPosition = this.model.possibleValueAnalysis(position, index);
 
-    if (currentPosition != -1) {
+    if (currentPosition != -1) { //tested without index==undefined!!!
       let absoluteData: number = this.getAbsoluteData(currentPosition) as number;
       
       this.currentRange[index] = absoluteData;
@@ -107,29 +107,32 @@ export class Presenter {
     }
   }
 
-  resizeHandler(): void {
-    if (this.checkChangeScale()) {
+  resizeHandler(): void { //tested
+    if (this.checkChangeScale()) { //subtested
       this.view.removeScale();
       this.view.setScale(this.getScaleData());
       this.view.setSliderOrientation(undefined, this.view.sliderScale);
     }
   }
 
-  externalDataHandler(value: string, index: number) {
+  externalDataHandler(value: string, index: number) {//tested
     let position: number = this.getRelativeData(parseInt(value)) as number;
     let currentPosition = this.model.possibleValueAnalysis(position, index);
 
-    if (currentPosition != -1) {
-      let feedbackContent: string = ''+ this.getAbsoluteData(currentPosition);
-
+    if (currentPosition != -1) {//subtested
+      let absoluteData: number = this.getAbsoluteData(currentPosition) as number;
+      
+      //почему не вносится в this.currentRange[index] = absoluteData (в аналогичном обработчике это есть)
+      this.currentRange[index] = absoluteData;
+      let feedbackContent: string = ''+ absoluteData;
       this.view.setElementPositions(currentPosition, index, feedbackContent);
     }  
   }
 
   controlDataHandler(value: number| boolean, hint: string) {
     let relativeCurrentValue: number[];
-    switch (true) {
-      case hint == 'min-value':
+    switch (true) { 
+      case hint == 'min-value': //subtest
         this.minPossibleValue = value as number;
         this.rangePossibleValues = this.maxPossibleValue - this.minPossibleValue;
         relativeCurrentValue = this.getRelativeData(this.currentRange) as number[];
@@ -141,7 +144,7 @@ export class Presenter {
           this.view.setSliderOrientation(this.view.verticalView, this.view.sliderScale);
         }
         break;
-      case hint == 'max-value':
+      case hint == 'max-value': //subtest
         this.maxPossibleValue = value as number;
         this.rangePossibleValues = this.maxPossibleValue - this.minPossibleValue;
         relativeCurrentValue = this.getRelativeData(this.currentRange) as number[];
@@ -153,65 +156,65 @@ export class Presenter {
           this.view.setSliderOrientation(this.view.verticalView, this.view.sliderScale);
         }
         break;
-      case hint == 'step':
+      case hint == 'step': //subtested
         this.model.setStep(value as number / this.rangePossibleValues);
         break;
-      case hint == 'scale':
-        console.log(value)
-        if (value) {
-          if (!this.view.sliderScale) {
+      case hint == 'scale': //subtested
+        
+        if (value) {//subtested
+          if (!this.view.sliderScale) {//subtested
             let scaleData: {} = this.getScaleData(this.noNumericScale);
             this.view.setScale(scaleData);
             this.view.setSliderOrientation(this.view.verticalView, this.view.sliderScale);
           }
-        } else {
-          if (this.view.sliderScale) {
+        } else {//subtested
+          if (this.view.sliderScale) {//subtested
             this.view.removeScale()
           }
         }
         break;
-      case hint == 'vertical':
-        if (value !== this.view.verticalView) {
+      case hint == 'vertical': //subtested
+        if (value !== this.view.verticalView) { //subtested
           this.view.setSliderOrientation(value as boolean);
           relativeCurrentValue = this.getRelativeData(this.currentRange) as number[];
           this.view.setElementPositions(relativeCurrentValue);
           
-          if (this.view.sliderScale && this.checkChangeScale()) {
+          if (this.view.sliderScale && this.checkChangeScale()) { //subtested
             this.view.removeScale();
             this.view.setScale(this.getScaleData());
             this.view.setSliderOrientation(undefined, this.view.sliderScale);
           }
         }
         break;
-      case hint == 'feedback':
+      case hint == 'feedback': //subtestes      
         
-        if (value !== this.view.useFeedback) {          
-          if (value) {
-            console.log('fb')
+        if (value !== this.view.useFeedback) {  //subtestes        
+          if (value) {    //subtestes              
             this.view.setThumbFeedbacks();
-          } else {
+          } else {//subtestes      
             this.view.removeThumbFeedback();
           }
         }
         break;
       
-      case hint == 'range-mode':
+      case hint == 'range-mode': //subtestes
         if (value !== this.view.rangeMode) {
-          if (value) {
+          if (value) { //subtestes
             this.view.setRangeMode();
             this.view.setSliderOrientation(undefined, this.view.sliderThumbs[1]);
             this.view.setSliderOrientation(undefined, this.view.sliderFiller);
             this.model.currentValues.push(this.model.currentValues[0] * 1.5);
             this.view.setElementPositions(this.model.currentValues);
-            if (this.view.setThumbFeedbacks) {
+            
+            if (this.view.useFeedback) { //subtestes
               this.view.setThumbFeedbacks();
             }
-          } else {
+          } else { //subtestes
             this.view.setSingleMode();
             this.model.currentValues.length = 1;
           }
         }
-      default:       
+      //default:       
     }
   }
 
@@ -247,7 +250,7 @@ export class Presenter {
   getAbsoluteData(value: number[]|number): number[]|number|string|string[]{ //tested
     
     if (!this.noNumericValues) {
-      if (value instanceof Array) {
+      if (value instanceof Array) { //subtested
         let result: number[] = [];
         value.forEach((item)=> {
           result.push(this.minPossibleValue + item * this.rangePossibleValues);
@@ -255,11 +258,11 @@ export class Presenter {
         return result;
       }
   
-      if (typeof value == 'number') {
+      if (typeof value == 'number') { //subtested
         return this.minPossibleValue + value * this.rangePossibleValues;
       }
     } else {
-      if (value instanceof Array) {
+      if (value instanceof Array) { //subtested
         let result: string[] = [];
         value.forEach((item)=> {
           result.push(this.getStringData(item));
@@ -267,7 +270,7 @@ export class Presenter {
         return result;
       }
   
-      if (typeof value == 'number') {
+      if (typeof value == 'number') { //subtested
         return this.getStringData(value);
       }
     }
