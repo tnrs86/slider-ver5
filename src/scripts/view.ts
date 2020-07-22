@@ -349,7 +349,11 @@ export class SliderThumb extends PageElement {
 
   changeOrientation(verticalView: boolean): void { //tested
     super.changeOrientation(verticalView);
-    this.htmlObject.style.all = '';
+    
+    while (this.htmlObject.style.length) {
+      this.htmlObject.style.removeProperty(this.htmlObject.style[0])
+    }
+    //this.htmlObject.style.all = '';
     if (this.feedback) {
       this.feedback.changeOrientation(verticalView);
     }
@@ -423,8 +427,12 @@ export class SliderFiller extends PageElement {
   }
 
   changeOrientation(verticalView: boolean): void { //tested
-    super.changeOrientation(verticalView);    
-    this.htmlObject.style.all = '';
+    super.changeOrientation(verticalView);
+    while (this.htmlObject.style.length) {
+      this.htmlObject.style.removeProperty(this.htmlObject.style[0]);
+    } 
+    
+    //this.htmlObject.style.all = '';
   }
 }
 
@@ -471,11 +479,20 @@ export class SliderScale extends PageElement {
       }
 
       this.htmlObject.className = this.className + ' ' + this.className + classNameModificator;
-
-      this.htmlObject.childNodes.forEach((node: HTMLElement)=>{
+      for (let i = 0; i< this.htmlObject.childNodes.length; i++) {              
+        let node: HTMLElement = this.htmlObject.childNodes[i] as HTMLElement;        
+        while (node.style.length) {
+          node.style.removeProperty(node.style[0]);
+        }
+        
+        node.style[edge] = parseFloat(node.dataset.position) * 100 + '%';      
+      }
+      
+      /*this.htmlObject.childNodes.forEach((node: HTMLElement)=>{
+        // @ts-ignore
         node.style.all = '';
         node.style[edge] = parseFloat(node.dataset.position) * 100 + '%';      
-      })
+      })*/
     }
   }
 
