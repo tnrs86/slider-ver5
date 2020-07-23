@@ -7,6 +7,7 @@ chai.use(require('sinon-chai'));
 import { View, PageElement, Slider, SliderTrack, SliderThumb, SliderFiller, ThumbFeedback, SliderScale, ControlPanel } from '../../src/scripts/view';
 
 import { JSDOM } from 'jsdom';
+import Sinon = require('sinon');
 const { window } = new JSDOM(`<!DOCTYPE html><p>Hello world</p>`);
 
 const { document } = (new JSDOM('<!DOCTYPE html><body><p>Hello world</p></body></html>')).window;
@@ -74,12 +75,12 @@ describe('Тестирование методов класса и подклас
     describe('Тестирование метода changeOrientation (замена одноименного метода в родительском классе), меняющего настройки слайдера '+
     'в зависимости от заданной ориентации',()=> {
 
-      let testArguments: {} = {'0': ['горизонтальный', 'horizontal'],  '1': ['вертикальный', 'vertical']};
+      let testArguments: {} = {'0': ['горизонтальный', 'horizontal', false],  '1': ['вертикальный', 'vertical', true]};
       
       for (let key in testArguments)  {
         it(`Тестирование при ${testArguments[key][0]} ориентации слайдера (аргумент метода: ${!!parseInt(key)})`, ()=>{          
           let testElement = new Slider('slider', 'slider_test-Slider', rootHTML);
-          testElement.changeOrientation(!!parseInt(key));
+          testElement.changeOrientation(testArguments[key][2]);
           let testHTMLElement = testElement.htmlObject;
           
           rootHTML.removeChild(document.getElementsByClassName('slider_test-Slider')[0])
@@ -90,6 +91,13 @@ describe('Тестирование методов класса и подклас
           assert.deepEqual(testHTMLElement.outerHTML, sampleHTMLElement.outerHTML);          
         })
       }
+
+      it('Тестирование при совпадении текущей и задаваемой ориентации слайдера', ()=> {
+        let testSlider = new Slider('slider', 'slider_test-Slider', rootHTML);
+        testSlider.verticalView = true;
+        testSlider.changeOrientation(true);
+        assert.isTrue(testSlider.verticalView);
+      })
     })
   })
 
@@ -172,11 +180,18 @@ describe('Тестирование методов класса и подклас
       
       describe('Режим использования фидбека', ()=> {
         let testThumb: SliderThumb = new SliderThumb('thumb', 'thumb', rootHTML, ()=>{return});
-        it('Проверка свойств объекта бегунка', ()=> {
+        it('Передана команда на установку фидбеков, при этом фидбеки в слайдере не установлены', ()=> {
           testThumb.manageFeedback(true);
+          testThumb.feedback = undefined;
+          assert.instanceOf(testThumb.feedback, ThumbFeedback);
+        })
+        it('Передана команда на установку фидбеков, при этом фидбеки в слайдере уже установлены', ()=> {
+          testThumb.manageFeedback(true);
+          testThumb.feedback = sinon.createStubInstance(ThumbFeedback);
           assert.instanceOf(testThumb.feedback, ThumbFeedback);
         })
       })
+
       describe('Режим работы без фидбека', ()=>{
         let testThumb: SliderThumb = new SliderThumb('thumb', 'thumb', rootHTML, ()=>{return});
         let feedbackClassName: string = 'thumb__feedback';
@@ -184,13 +199,17 @@ describe('Тестирование методов класса и подклас
         testThumb.feedback = testFeedback;
         testThumb.manageFeedback(false);
 
-        it('Проверка свойств объкета бегунка', ()=> {
+        it('Передана команда на удаление фидбека, при этом фидбек установлен', ()=> {
+          assert.isUndefined(testThumb.feedback);
+          assert.isEmpty(testThumb.htmlObject.getElementsByClassName(feedbackClassName));
+        })
+
+        it('Передана команда на удаление фидбека, при этом фидбек не установлен', ()=> {
+          testThumb.feedback = undefined;
           assert.isUndefined(testThumb.feedback);
         })
 
-        it('Проверка свойств html-элемента бегунка (html-элемент фидбека должен быть удален из DOM)', ()=>{          
-          assert.isEmpty(testThumb.htmlObject.getElementsByClassName(feedbackClassName));
-        })
+
       })
     })
 
@@ -456,8 +475,31 @@ describe('Тестирование методов класса и подклас
 
           expect(spy).to.have.callCount(thumbsCount);   
           SliderThumb.prototype.manageFeedback = normalManageFeedback;         
-        })            
+        })       
       }) 
+    })
+
+    describe('Тестирование метода removeThumbFeedback(): void, удаляющего фидбеки', ()=> {
+
+      let thumbCountList: number[] = [1, 2, 3];
+
+      thumbCountList.forEach((thumbCount, index)=> {
+        let callCount: number = 0;
+        
+        it('Тест ' + (index + 1), ()=> {
+          let testView: View = new View();
+  
+          for (let i = 0; i < thumbCount; i++) {
+            let stubThumb = sinon.createStubInstance(SliderThumb,);
+            stubThumb.manageFeedback.callsFake(()=>{callCount++})
+            testView.sliderThumbs.push(stubThumb);
+          }          
+          
+          testView.removeThumbFeedback();
+
+          assert.equal(thumbCount, callCount);
+        })
+      })
     })
 
     describe('Тестирование метода setScale (создание и подключение шкалы слайдера)', ()=> {
@@ -544,7 +586,8 @@ describe('Тестирование методов класса и подклас
         stub.restore();
       })
 
-      it('Проверка при вызове метода с аргументом verticalView = undefined', ()=> {
+      it('Проверка при вызове метода с аргументом verticalView = undefined и указанием изменяемого элемента, '+
+      'при этом свойство слайдера verticalView указано', ()=> {
         let testView: View = new View();
         testView.sliderScale = new SliderScale('scale', 'scale', rootHTML, {});
         let stub = sinon.stub(SliderScale.prototype, 'changeOrientation');
@@ -553,6 +596,18 @@ describe('Тестирование методов класса и подклас
         
         assert.equal(stub.callCount, 1);
         assert.equal(stub.args[0][0], true);
+
+        stub.restore();        
+      })
+
+      it('Проверка при вызове метода с аргументом verticalView = undefined, при этом не указа', ()=> {
+        let testView: View = new View();
+        testView.sliderScale = new SliderScale('scale', 'scale', rootHTML, {});
+        let stub = sinon.stub(SliderScale.prototype, 'changeOrientation');
+        testView.verticalView = undefined;
+        testView.setSliderOrientation(undefined, testView.sliderScale);        
+        
+        assert.equal(stub.callCount, 0);        
 
         stub.restore();        
       })
@@ -628,6 +683,24 @@ describe('Тестирование методов класса и подклас
         SliderFiller.prototype.move = normalFillerMove;
         stub.restore();
       })
+
+      it('Тестирование метода при передаче единичного значения без индекса', ()=> {
+        let testView: View = new View();
+        testView.verticalView = false;
+        let callCount: number = 0;
+        for (let i = 0; i < 2; i++) {
+          let thumbStub = sinon.createStubInstance(SliderThumb);
+          thumbStub.move.callsFake(()=> {callCount++})
+          testView.sliderThumbs
+        }
+        let fillerStub = sinon.createStubInstance(SliderFiller);
+        fillerStub.move.callsFake(()=> {callCount++})
+        testView.sliderFiller = fillerStub;
+        
+        testView.setElementPositions(0.2);
+
+        assert.equal(0, callCount);
+      })
     })
     
     describe('Тестирование метода setListeners, устанавливающего слушатели на события дочерних элементов View', ()=> {
@@ -638,6 +711,9 @@ describe('Тестирование методов класса и подклас
         let testView = new View();
         let positionHandler: Function = ()=>{return}; //простейшая функция нужна для работы assert
         let resizeHandler: Function = ()=>{return};
+        testView.sliderTrack = new SliderTrack('track', 'track', rootHTML);
+        testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML, ()=>{return}));
+        testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML, ()=>{return}));
         testView.setListeners(positionHandler, resizeHandler);
 
         assert.isFunction(testView.externalPositionHandler);
@@ -660,6 +736,13 @@ describe('Тестирование методов класса и подклас
         testView.setListeners(postionHandler, resizeHandler);
         
         assert.equal(i, 2);        
+      })
+
+      it('Проверка метода при неустановленных элементах управления (трека слайдера или бегунка)', ()=> {
+        let testView = new View();
+        let postionHandler: Function;
+        let resizeHandler: Function = ()=>{return};        
+        expect(()=>testView.setListeners(postionHandler, resizeHandler)).to.throw('Не установлены элементы управления слайдером!');        
       })
     })
 
@@ -742,6 +825,9 @@ describe('Тестирование методов класса и подклас
       rootHTML.appendChild(sliderHTMLObject);
       testView.sliderTrack.htmlObject = sliderHTMLObject;
       let indexTestData: number;
+
+
+
       let testData: {}[] = [
         {descriptor: 'Тестирование при горизонтальном виде слайдера', vertical: false, arg: undefined, width: 500, height: 30, ansv: 500},
         {descriptor: 'Тестирование при вертикальном виде слайдера', vertical: true, arg: undefined, width: 30, height: 750, ansv: 750},
@@ -759,6 +845,10 @@ describe('Тестирование методов класса и подклас
         })
       })
 
+      it('Проверка работы метода при не заданных параметрах ориентации слайдера', ()=> {
+        testView.verticalView = undefined;
+        assert.isUndefined(testView.getSliderSize(undefined));
+      })
     })
   })
   
