@@ -1,6 +1,5 @@
 /// <reference path="./app.d.ts" />
-export class View {
-  
+export class View {  
   rangeMode: boolean = false;
   useScale: boolean = false;
   useFeedback: boolean = false;
@@ -14,22 +13,6 @@ export class View {
   externalPositionHandler: Function;
   controlPanel: ControlPanel;
   parentElement: HTMLElement;
-  /*constructor() {
-    this.parentElement = parentElement;
-    this.rangeMode = rangeMode;
-    this.useFeedback = useFeedback;
-    this.verticalView = verticalView;
-    this.useScale = useScale;
-  }
-
-  init(parentElement: HTMLElement, rangeMode: boolean, useFeedback: boolean, verticalView: boolean, useScale: boolean, startPositions: number[],  scaleData?: {}) {
-    this.setBaseConfiguration();
-    this.setSelectMode(this.rangeMode);
-    this.setFeedbackMode(this.useFeedback);
-    this.setScaleMode(this.useScale, scaleData);
-    this.setOrientation(this.verticalView);
-    this.setPositions(startPositions);
-  }*/
 
   setBaseConfiguration(parentElement: HTMLElement): void { //tested
     this.slider = new Slider('slider', 'slider', parentElement);
@@ -45,13 +28,14 @@ export class View {
     } 
   }
 
-  setSingleMode(): void {
+  setSingleMode(): void { //tested
     this.rangeMode = false;
     this.sliderThumbs[1].removeHTMLElement(); //no tested
     this.sliderThumbs.length = 1;
     this.sliderFiller.removeHTMLElement(); //no tested
     this.sliderFiller = undefined;
   }
+
   setThumbFeedbacks(): void { //tested
     this.useFeedback = true;
     this.sliderThumbs.forEach((thumb)=>{      
@@ -59,7 +43,7 @@ export class View {
     })    
   }
 
-  removeThumbFeedback(): void {
+  removeThumbFeedback(): void { //tested
     this.useFeedback = false;
     this.sliderThumbs.forEach((thumb)=>{      
       thumb.manageFeedback(false);     
@@ -75,37 +59,37 @@ export class View {
     this.sliderScale = undefined;
   }
 
-  setSliderOrientation(verticalView?: boolean, sliderElement?: PageElement ): void { //tested w bags
+  setSliderOrientation(verticalView?: boolean, sliderElement?: PageElement ): void { //tested
     
-    if (typeof verticalView === 'undefined') {
+    if (typeof verticalView === 'undefined') { //subtested
       if (typeof this.verticalView !== 'undefined') {
+        //ветка активируется, если надо установить ориентацию для элемента слайдера такую же, как и у всего слайдера
         verticalView = this.verticalView;        
-      } else {
-        // bag
+      } else {  //subtested
+        console.warn('Метод setSliderOrientation не сработал, отсутствуют данные об ориентации');
         return;
       }
     }
 
-    if (sliderElement) {
+    if (sliderElement) {  //subtested
       
-      sliderElement.changeOrientation(verticalView);
-      
+      sliderElement.changeOrientation(verticalView);      
       return;
     }
+
     this.verticalView = verticalView;
     Object.keys(this).forEach((key)=> {
       if (this[key] instanceof PageElement) {
         this[key].changeOrientation(verticalView)
-      }  
-
+      }
     })
-    this.sliderThumbs.forEach((thumb)=> {
-        
+
+    this.sliderThumbs.forEach((thumb)=> {        
       thumb.changeOrientation(verticalView);
     })
   }
 
-  setElementPositions(positions: number[]|number, index?: number, feedbackContent?: string) { 
+  setElementPositions(positions: number[]|number, index?: number, feedbackContent?: string) { //tested
     if ( typeof positions == 'object' && typeof index == 'undefined') { //tested
       this.sliderThumbs.forEach((thumb, index)=> {
         thumb.move(positions[index], feedbackContent);
@@ -120,14 +104,13 @@ export class View {
       
       this.sliderThumbs[index].move(positions, feedbackContent);
       this.sliderThumbs[index].setPositionAttribute(positions);
+      
       if (this.sliderFiller) {        
-        
         this.sliderFiller.move([this.sliderThumbs[0].getPositionAttribute(), this.sliderThumbs[1].getPositionAttribute()]);
       }
       
-    } else {
-      
-      //bug
+    } else { //subtested
+      console.warn('Метод setElementPositions не сработал. Не достаточно параметров. Укажите индекс перемещаемого бегунка.');   
     }
   }
 
@@ -141,16 +124,13 @@ export class View {
     if (this.sliderTrack && this.sliderThumbs[0]) {
        
       this.sliderTrack.setListeners(this.positionHandler.bind(this), this.setActiveThumb.bind(this));
-      /*this.sliderThumbs.forEach((thumb)=>{
-        thumb.setListeners(this.setActiveThumb.bind(this));
-      })*/
 
       if (this.sliderScale) {
         this.sliderScale.setListeners(this.positionHandler.bind(this));
       }
 
-    } else {
-      //bug!!
+    } else { //tested
+      throw(new Error('Не установлены элементы управления слайдером!'));
     }
   }
 
@@ -204,8 +184,8 @@ export class View {
           return this.sliderTrack.htmlObject.clientHeight;
         }
         return this.sliderTrack.htmlObject.clientWidth;        
-      } else {
-        //bug
+      } else { //subtested
+        console.warn('Не задан параметр ориентации слайдера!');
       }
     } else {
       if (verical) {
@@ -279,13 +259,11 @@ export class PageElement {
 }
 
 export class Slider extends PageElement {
-  changeOrientation(verticalView: boolean) { //tested 
-    
-    if (this.verticalView != verticalView) {
+  changeOrientation(verticalView: boolean) { //tested    
+    if (this.verticalView != verticalView) { //subtested
       super.changeOrientation(verticalView);
-      //this.verticalView = verticalView;      
-      if (verticalView) {
-        
+    
+      if (verticalView) {        
         this.htmlObject.className = this.className + ' ' + this.className + '_vertical';
       } else {
         this.htmlObject.className = this.className + ' ' + this.className + '_horizontal';
@@ -353,7 +331,7 @@ export class SliderThumb extends PageElement {
     while (this.htmlObject.style.length) {
       this.htmlObject.style.removeProperty(this.htmlObject.style[0])
     }
-    //this.htmlObject.style.all = '';
+
     if (this.feedback) {
       this.feedback.changeOrientation(verticalView);
     }
@@ -487,12 +465,6 @@ export class SliderScale extends PageElement {
         
         node.style[edge] = parseFloat(node.dataset.position) * 100 + '%';      
       }
-      
-      /*this.htmlObject.childNodes.forEach((node: HTMLElement)=>{
-        // @ts-ignore
-        node.style.all = '';
-        node.style[edge] = parseFloat(node.dataset.position) * 100 + '%';      
-      })*/
     }
   }
 
