@@ -42,25 +42,23 @@ export class Presenter {
     this.model = model;
   }
 
-  init(options: SliderOptions, rootHTMLElement: HTMLElement): void {
+  init(options: SliderOptions, rootHTMLElement: HTMLElement): void { //tested
     this.view.setBaseConfiguration(rootHTMLElement);
     
     let relativeCurrentValue: number[] = [];    
-    if (options.rangeMode) {
-      this.view.setRangeMode();
-      //relativeCurrentValue = this.getRelativeData( [this.startSelectedRange, this.endSelectedRange] ) as number[];     
-    } else {      
-     //relativeCurrentValue = this.getRelativeData( [this.startSelectedRange] ) as number[];            
+    if (options.rangeMode) { //subtested
+      this.view.setRangeMode();        
     }
+
     relativeCurrentValue = this.getRelativeData(this.currentRange) as number[];
     
-    if (options.usefeedBack) {      
+    if (options.usefeedBack) {  //subtested    
       this.view.setThumbFeedbacks();
     }
 
     this.view.setSliderOrientation(options.verticalView); 
     
-    if (options.useScale) {      
+    if (options.useScale) {      //subtested
       let scaleData: {} = this.getScaleData(options.noNumericScale);
       
       if (this.noNumericValues && options.noNumericScale) {
@@ -78,7 +76,7 @@ export class Presenter {
     this.view.setElementPositions(relativeCurrentValue); 
     
     this.model.setCurrentValues(relativeCurrentValue);
-    if (options.step) {
+    if (options.step) { //subtested
       this.model.setStep(options.step / this.rangePossibleValues);
     }
     
