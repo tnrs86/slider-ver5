@@ -2,8 +2,8 @@
 import { Model } from '../../src/scripts/model';
 import { expect, assert } from 'chai';
 import * as sinon from 'sinon';
-let chai = require('chai');
-chai.use(require('sinon-chai'));
+//let chai = require('chai');
+//chai.use(require('sinon-chai'));
 import { View, PageElement, Slider, SliderTrack, SliderThumb, SliderFiller, ThumbFeedback, SliderScale, ControlPanel } from '../../src/scripts/view';
 
 import { JSDOM } from 'jsdom';
@@ -36,8 +36,7 @@ describe('Тестирование методов класса и подклас
         let testElement = new PageElement('slider', 'slider', rootHTML);
         let testHTMLElement: HTMLElement = testElement.createHTMLElement('slider');
         let sampleHTMLElement: HTMLElement = document.createElement('div');
-        sampleHTMLElement.className = 'slider';
-        //expect(testHTMLElement).to.deep.equal(sampleHTMLElement);
+        sampleHTMLElement.className = 'slider';        
         assert.deepEqual(testHTMLElement.outerHTML, sampleHTMLElement.outerHTML)
       })
     })
@@ -70,13 +69,25 @@ describe('Тестирование методов класса и подклас
     })
   })
 
-
   describe('Тестирование методов класса Slider (расширенный класс PageElement)', ()=> {
     describe('Тестирование метода changeOrientation (замена одноименного метода в родительском классе), меняющего настройки слайдера '+
     'в зависимости от заданной ориентации',()=> {
 
       let testArguments: {} = {'0': ['горизонтальный', 'horizontal', false],  '1': ['вертикальный', 'vertical', true]};
-      
+      let pageElementChangeOrientStub: Sinon.SinonStub;
+
+      before(()=> {
+        pageElementChangeOrientStub = sinon.stub(PageElement.prototype, 'changeOrientation');
+      })
+
+      beforeEach(()=> {
+        sinon.resetHistory();
+      })
+
+      after(()=> {
+        sinon.restore();
+      })
+
       for (let key in testArguments)  {
         it(`Тестирование при ${testArguments[key][0]} ориентации слайдера (аргумент метода: ${!!parseInt(key)})`, ()=>{          
           let testElement = new Slider('slider', 'slider_test-Slider', rootHTML);
@@ -88,7 +99,8 @@ describe('Тестирование методов класса и подклас
           let sampleHTMLElement: HTMLElement = document.createElement('div');
           sampleHTMLElement.className = 'slider_test-Slider slider_test-Slider_' + testArguments[key][1];
           
-          assert.deepEqual(testHTMLElement.outerHTML, sampleHTMLElement.outerHTML);          
+          assert.deepEqual(testHTMLElement.outerHTML, sampleHTMLElement.outerHTML);
+          assert.equal(pageElementChangeOrientStub.callCount, 1);        
         })
       }
 
@@ -118,12 +130,12 @@ describe('Тестирование методов класса и подклас
         assert.isFunction(testHTMLElement.onmouseleave);
       })
 
-      it('Проверка установки слушателя на событие onmouseup', ()=> {        
-        assert.isFunction(testHTMLElement.onmouseup);
-      })
-
       it('Проверка установки слушателя на событие onmousedown', ()=> {        
         assert.isFunction(testHTMLElement.onmousedown);
+      })
+      
+      it('Проверка установки слушателя на событие onmouseup', ()=> {        
+        assert.isFunction(testHTMLElement.onmouseup);
       })
     })
   })
@@ -178,11 +190,14 @@ describe('Тестирование методов класса и подклас
 
     describe('Тестирование метода manageFeedback, управляющего (добавление/удаление) надписью над бегунком (далее - фидбек)', ()=>{    
       
-      describe('Режим использования фидбека', ()=> {
+      describe('Режим работы с фидбеком', ()=> {
         let testThumb: SliderThumb = new SliderThumb('thumb', 'thumb', rootHTML, ()=>{return});
         it('Передана команда на установку фидбеков, при этом фидбеки в слайдере не установлены', ()=> {
-          testThumb.manageFeedback(true);
+          testThumb.feedbackClassName = 'feedback';
+          testThumb.htmlObject = document.createElement('div');
           testThumb.feedback = undefined;
+          testThumb.manageFeedback(true);
+
           assert.instanceOf(testThumb.feedback, ThumbFeedback);
         })
         it('Передана команда на установку фидбеков, при этом фидбеки в слайдере уже установлены', ()=> {
@@ -196,16 +211,17 @@ describe('Тестирование методов класса и подклас
         let testThumb: SliderThumb = new SliderThumb('thumb', 'thumb', rootHTML, ()=>{return});
         let feedbackClassName: string = 'thumb__feedback';
         let testFeedback = new ThumbFeedback('feedback', feedbackClassName, testThumb.htmlObject);
-        testThumb.feedback = testFeedback;
-        testThumb.manageFeedback(false);
+        testThumb.feedback = testFeedback;        
 
         it('Передана команда на удаление фидбека, при этом фидбек установлен', ()=> {
+          testThumb.manageFeedback(false);
           assert.isUndefined(testThumb.feedback);
           assert.isEmpty(testThumb.htmlObject.getElementsByClassName(feedbackClassName));
         })
 
         it('Передана команда на удаление фидбека, при этом фидбек не установлен', ()=> {
           testThumb.feedback = undefined;
+          testThumb.manageFeedback(false);
           assert.isUndefined(testThumb.feedback);
         })
 
@@ -215,16 +231,30 @@ describe('Тестирование методов класса и подклас
 
     describe('Тестирование метода move, перемещающего бегунок на заданную позицию (проверка корректности позиции выполняется в Model', ()=>{
       let position: number = 0.5;
-      
-      it('Перемещение бегунка при горизонтальной ориентации слайдера в позицию 50% от левого края родительского html-элемента', ()=> {
-        let testThumb: SliderThumb = new SliderThumb('thumb', 'thumb', rootHTML, ()=>{return});
+      let testThumb: SliderThumb;
+      let feedbackStub: Sinon.SinonStubbedInstance<ThumbFeedback>;
+
+      before(()=> {
+        feedbackStub = sinon.createStubInstance(ThumbFeedback);
+      })
+
+      beforeEach(()=> {        
+        testThumb = new SliderThumb('thumb', 'thumb', rootHTML, ()=>{return});        
+      })
+
+      after(()=> {
+        sinon.restore();
+      })
+
+      it('Перемещение бегунка при горизонтальной ориентации слайдера в позицию 50% от левого края родительского html-элемента', ()=> {    
+        testThumb.feedback = feedbackStub;    
         testThumb.verticalView = false;
         testThumb.move(position);
         assert.equal(testThumb.htmlObject.style.left, '50%');
       })
 
       it('Перемещение бегунка при вертикальной ориентации слайдера в позицию 50% от верхнего края родительского html-элемента', ()=> {
-        let testThumb: SliderThumb = new SliderThumb('thumb', 'thumb', rootHTML, ()=>{return});
+        
         testThumb.verticalView = true;
         testThumb.move(position);
         assert.equal(testThumb.htmlObject.style.top, '50%');
@@ -241,36 +271,48 @@ describe('Тестирование методов класса и подклас
         let testThumb: SliderThumb = new SliderThumb('thumb', 'thumb', localRootHTML, ()=>{return});
         testThumb.htmlObject.style.position = 'absolute';
 
+        before(()=> {
+          sinon.stub(HTMLElement.prototype, 'offsetTop').value('150');
+          sinon.stub(HTMLElement.prototype, 'offsetHeight').value('500');
+          
+          sinon.stub(HTMLElement.prototype, 'offsetLeft').value('300');
+          sinon.stub(HTMLElement.prototype, 'offsetWidth').value('500');
+        })
+
+        after(()=> {
+          sinon.restore();
+        })
         it('Вызов метода с аргументом, в атрибут dataset-position записывается значение аргумента', ()=> {
           testThumb.setPositionAttribute(0.5);
           assert.equal(testThumb.htmlObject.dataset.position, '0.5');
         })
 
-        it('Вызов метода без аргумента, в атрибут dataset-position записывается текущая координата бегунка, ', ()=> {
+        it('Вызов метода без аргумента, '+
+        'в атрибут dataset-position записывается текущая координата бегунка (горизонтальная ориентация слайдера), ', ()=> {
           testThumb.htmlObject.style.left = '60%';
           testThumb.verticalView = false;
           testThumb.setPositionAttribute();
           assert.equal(testThumb.htmlObject.dataset.position, '0.6');
         })
+
+        it('Вызов метода без аргумента, '+
+        'в атрибут dataset-position записывается текущая координата бегунка (вертикальная ориентация слайдера), ', ()=> {
+          testThumb.htmlObject.style.top = '30%';
+          testThumb.verticalView = true;
+          testThumb.setPositionAttribute();
+          assert.equal(testThumb.htmlObject.dataset.position, '0.3');
+        })
       })
 
-    describe('Тестирование преобразования объекта бегунка к примитивному значению (метод [Symbol.toPrimitive])',()=> {
-      let testThumb: SliderThumb = new SliderThumb('thumb', 'thumb', rootHTML, ()=>{return});
-      
-      it('Преобразование при математических операциях с объектом бегунка (атрибута dataset-position не задан)', ()=> {
-        assert.equal(+testThumb, -1);
-      })
+    describe('Тестирование метода getPositionAttribute(): number, возвращающего значение атрибута data-position DOM-элемента', ()=> {
+      let htmlParent = document.createElement('div');
+      let testThumb: SliderThumb = new SliderThumb('thumb', 'thumb', htmlParent, ()=> {});
+      testThumb.htmlObject = document.createElement('div');
+      let positionValue: number = 0.5;
+      testThumb.htmlObject.dataset.position = ''+positionValue;
 
-      it('Преобразование при математических операциях с объектом бегунка (задан атрибут dataset-position), '+
-        'метод возвращает значение атрибута dataset-position', ()=> {        
-        testThumb.htmlObject.dataset.position = '0.5';
-             
-        assert.equal(+testThumb, 0.5);
-      })
-    
-
-      it('Преобразование при строковых операциях с объектом бегунка (возвращается имя объекта)', ()=> {
-        assert.equal('' + testThumb, 'thumb');
+      it('Проверка', ()=> {
+        assert.equal(testThumb.getPositionAttribute(), positionValue );
       })
     })
   })
@@ -335,8 +377,7 @@ describe('Тестирование методов класса и подклас
     
     //let scaleData: {} = {0.1: '1', 0.2: '2', 0.3: '3', 0.4: '4', 0.5: '5', 0.6: '6', 0.7: '7', 0.8: '8', 0.9: '9', 1: '10'};
     let scaleData: {} = {0: '1', 1: '2'};
-    let testScale: SliderScale = new SliderScale('scale', 'slider__scale', rootHTML, scaleData);
-    
+    let testScale: SliderScale = new SliderScale('scale', 'slider__scale', rootHTML, scaleData);    
     
     describe('Тестирование метода createScaleHTMLComponent, генерирующего компонент html элемента шкалы слайдера, '+
     'состоящего из двух узлов (отметка шкалы и текст), обернутых в div. '+
@@ -363,7 +404,7 @@ describe('Тестирование методов класса и подклас
       let testElement: HTMLElement;
       let keyArray: number[] = Object.keys(scaleData).map((key)=>{return parseFloat(key)});
       
-      keyArray.sort((a, b)=>{ return a- b });
+      keyArray.sort((a, b)=>{ return a - b });
 
       it('Тестирование при вертикальной ориентации слайдера (аргумент метода: false)', ()=> {
         let sampleElement: HTMLElement = document.createElement('div');
@@ -374,8 +415,7 @@ describe('Тестирование методов класса и подклас
           `<div class="scale__mark"></div>`+
           `<div class="scale__mark-label">${scaleData[key]}</div></div>`;
         });
-        sampleElement.innerHTML = HTMLCode;
-        
+        sampleElement.innerHTML = HTMLCode;        
 
         testScale.changeOrientation(true);
         testElement = testScale.htmlObject;
@@ -383,9 +423,9 @@ describe('Тестирование методов класса и подклас
       })
 
       it('Тестирование при горизонтальной ориентации слайдера (аргумент метода: true)', ()=> {
-        let sampleElement: HTMLElement = document.createElement('div');
-        sampleElement.className = 'slider__scale slider__scale_horizontal';
+        let sampleElement: HTMLElement = document.createElement('div');        
         let HTMLCode: string = '';
+        sampleElement.className = 'slider__scale slider__scale_horizontal';
         keyArray.forEach((key)=> {
           HTMLCode += `<div class="scale__component" data-position="${key}" style="left: ${key * 100 + '%'};">`+
           `<div class="scale__mark"></div>`+
@@ -394,11 +434,12 @@ describe('Тестирование методов класса и подклас
         sampleElement.innerHTML = HTMLCode;
 
         testScale.changeOrientation(false);
-        testElement = testScale.htmlObject;
-        
+        testElement = testScale.htmlObject;        
         
         assert.deepEqual(testElement.outerHTML, sampleElement.outerHTML);
       })
+
+
     })
   })
   
@@ -457,24 +498,35 @@ describe('Тестирование методов класса и подклас
     describe('Тестирование метода setThumbFeedbacks, добавляющего отображение текущих значений над бегунками (далее - фидбеки). '+
     'Метод вызывает соответствующий метод класса SliderThumb для каждого экземпляра класса SliderThumb', ()=> {
       let thumbsCountCollection: number[] = [1, 2, 6];
-      let testView = new View();
-      let spy = sinon.spy();
+      let testView: View;      
+      let sliderThumbStub: Sinon.SinonStubbedInstance<SliderThumb>;
+      
+      before(()=> {
+        sliderThumbStub = sinon.createStubInstance(SliderThumb);
+      })
+
+      beforeEach(()=> {
+        testView = new View();
+      })
+
+      afterEach(()=> {
+        sinon.resetHistory();
+      })
+
+      after(()=> {
+        sinon.restore();
+      })
 
       thumbsCountCollection.forEach(function(thumbsCount) {        
-        it('Проверка работы метода при количестве экземпляров класса SliderThumb равное ' + thumbsCount, ()=> {
-          let normalManageFeedback = SliderThumb.prototype.manageFeedback;
-          SliderThumb.prototype.manageFeedback = spy;
-          testView.sliderThumbs.length = 0;
-          spy.resetHistory();
-          
+        it('Проверка работы метода при количестве экземпляров класса SliderThumb равное ' + thumbsCount, ()=> {          
           for (let i = 0; i < thumbsCount; i++) {
-            testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML, ()=>{return}))
+            testView.sliderThumbs.push(sliderThumbStub);
           }
 
           testView.setThumbFeedbacks();
 
-          expect(spy).to.have.callCount(thumbsCount);   
-          SliderThumb.prototype.manageFeedback = normalManageFeedback;         
+          assert.equal(sliderThumbStub.manageFeedback.callCount, thumbsCount);
+          assert.isTrue(testView.useFeedback); 
         })       
       }) 
     })
@@ -490,7 +542,7 @@ describe('Тестирование методов класса и подклас
           let testView: View = new View();
   
           for (let i = 0; i < thumbCount; i++) {
-            let stubThumb = sinon.createStubInstance(SliderThumb,);
+            let stubThumb = sinon.createStubInstance(SliderThumb);
             stubThumb.manageFeedback.callsFake(()=>{callCount++})
             testView.sliderThumbs.push(stubThumb);
           }          
@@ -616,72 +668,101 @@ describe('Тестирование методов класса и подклас
 
     describe('Тестирование метода setElementPositions(positions: number[]|number, index?: number), '+
     'устанавливающего позиции у дочерних элементов слайдера (бегунки и заполнитель)', ()=> {
+
+      let callCount: number = 0;
+      let thumbStub: Sinon.SinonStubbedInstance<SliderThumb>
+      let fillerStub: Sinon.SinonStubbedInstance<SliderFiller>;
+      before(()=> {
+        thumbStub = sinon.createStubInstance(SliderThumb);
+        fillerStub = sinon.createStubInstance(SliderFiller);
+      })
+
+      afterEach(()=> {
+        sinon.resetHistory();
+        callCount = 0;
+      })
+
+      after(()=> {
+        sinon.restore();
+      })
+
       it('Тестирование метода при работе слайдера в режиме выбора единичного значения (управление одним бегунком)', ()=> {
         let testView: View = new View();
-        testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML, ()=>{return}));
-        
-        let spy = sinon.spy();
-        let normalMove = SliderThumb.prototype.move;
-        SliderThumb.prototype.move = spy;
+        testView.sliderThumbs.push(thumbStub);
 
         let positions: number[] = [0.5];
         testView.setElementPositions(positions);
-        assert.equal(spy.callCount, 1);
 
-        SliderThumb.prototype.move = normalMove;        
+        callCount = thumbStub.move.callCount + thumbStub.setPositionAttribute.callCount + fillerStub.move.callCount;
+        assert.equal(callCount, 2);     
       })
 
       it('Тестирование метода при работе слайдера в режиме выбора диапазона (управление двумя бегунками и заполнителем), '+
       'позиция задается массивом значений (позиция левого и правого бегунка)', ()=> {
         let testView: View = new View();
-        testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML, ()=>{return}));
-        testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML, ()=>{return}));
-        testView.sliderFiller = new SliderFiller('filler', 'filler', rootHTML);
-        
-        let spy = sinon.spy();
-        let normalThumbMove = SliderThumb.prototype.move;
-        SliderThumb.prototype.move = spy;
-        let normalFillerMove = SliderFiller.prototype.move;
-        SliderFiller.prototype.move = spy;
+
+        testView.sliderThumbs.push(thumbStub);
+        testView.sliderThumbs.push(thumbStub);
+        testView.sliderFiller = fillerStub;
 
         let positions: number[] = [0.5, 0.8];
         testView.setElementPositions(positions);
-        assert.equal(spy.callCount, 3);
-
-        SliderThumb.prototype.move = normalThumbMove;
-        SliderFiller.prototype.move = normalFillerMove;
+        callCount = thumbStub.move.callCount + thumbStub.setPositionAttribute.callCount + fillerStub.move.callCount;
+        assert.equal(callCount, 5);
       })
 
       it('Тестирование метода при работе слайдера в режиме выбора диапазона (управление двумя бегунками и заполнителем), '+
-      'задается позиция конкретного бегунка (позиция на треке и номер бегунка в массиве sliderThumbs)', ()=> {
+      'в качестве аргументов передается позиция конкретного бегунка (позиция на треке и номер бегунка в массиве sliderThumbs). '+
+      'Проверяется количество вызовов шпионов, переданные в ходе вызова шпионов аргументы, '+
+      'а так же факт обращения к методам конкретного бегунка', ()=> {
         let testView: View = new View();
         testView.verticalView = false;
-        testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML, ()=>{return}));        
-        testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML, ()=>{return}));
-        testView.sliderFiller = new SliderFiller('filler', 'filler', rootHTML);
-        
-        let spy = sinon.spy();
-        let normalThumbMove = SliderThumb.prototype.move;
-        SliderThumb.prototype.move = spy;
-        let normalFillerMove = SliderFiller.prototype.move;
-        SliderFiller.prototype.move = spy;
+
+        testView.sliderThumbs.push(thumbStub);
+        testView.sliderThumbs.push(thumbStub);
+        testView.sliderFiller = fillerStub;
 
         let i: number = 2;
-        let stub = sinon.stub(SliderThumb.prototype, 'getPositionAttribute').callsFake(()=> {
+        thumbStub.getPositionAttribute.callsFake(()=> {
           i++;
           return i;
         });
 
         let position: number = 0.8;
         testView.setElementPositions(position, 1);
-        
-        assert.deepEqual(spy.thisValues[0], testView.sliderThumbs[1]);
-        assert.equal(spy.args[0][0], '0.8');
-        assert.deepEqual(spy.args[1][0], [3, 4]);
+        callCount = thumbStub.move.callCount + thumbStub.setPositionAttribute.callCount + fillerStub.move.callCount;
+        assert.equal(callCount, 3);
+        //обращение к конкретному бегунку:
+        assert.deepEqual(thumbStub.move.thisValues[0], testView.sliderThumbs[1]);
+        assert.equal(thumbStub.move.args[0][0], 0.8);
+        assert.equal(thumbStub.setPositionAttribute.args[0][0], 0.8);
+        assert.deepEqual(fillerStub.move.args[0][0], [3, 4]);
+      })
 
-        SliderThumb.prototype.move = normalThumbMove;
-        SliderFiller.prototype.move = normalFillerMove;
-        stub.restore();
+      it('Тестирование метода при работе слайдера в режиме выбора диапазона (управление двумя бегунками и без заполнителем), '+
+      'в качестве аргументов передается позиция конкретного бегунка (позиция на треке и номер бегунка в массиве sliderThumbs). '+
+      'Проверяется количество вызовов шпионов, переданные в ходе вызова шпионов аргументы, '+
+      'а так же факт обращения к методам конкретного бегунка', ()=> {
+        let testView: View = new View();
+        testView.verticalView = false;
+
+        testView.sliderThumbs.push(thumbStub);
+        testView.sliderThumbs.push(thumbStub);        
+        testView.sliderFiller = undefined;
+        let i: number = 2;
+        thumbStub.getPositionAttribute.callsFake(()=> {
+          i++;
+          return i;
+        });
+
+        let position: number = 0.6;
+        testView.setElementPositions(position, 1);
+        callCount = thumbStub.move.callCount + thumbStub.setPositionAttribute.callCount + fillerStub.move.callCount;
+        assert.equal(callCount, 2);
+        //обращение к конкретному бегунку:
+        assert.deepEqual(thumbStub.move.thisValues[0], testView.sliderThumbs[1]);
+        assert.equal(thumbStub.move.args[0][0], 0.6);
+        assert.equal(thumbStub.setPositionAttribute.args[0][0], 0.6);        
       })
 
       it('Тестирование метода при передаче единичного значения без индекса', ()=> {
@@ -689,16 +770,13 @@ describe('Тестирование методов класса и подклас
         testView.verticalView = false;
         let callCount: number = 0;
         for (let i = 0; i < 2; i++) {
-          let thumbStub = sinon.createStubInstance(SliderThumb);
-          thumbStub.move.callsFake(()=> {callCount++})
-          testView.sliderThumbs
+          testView.sliderThumbs.push(thumbStub);
         }
-        let fillerStub = sinon.createStubInstance(SliderFiller);
-        fillerStub.move.callsFake(()=> {callCount++})
+
         testView.sliderFiller = fillerStub;
         
         testView.setElementPositions(0.2);
-
+        callCount = thumbStub.move.callCount + thumbStub.setPositionAttribute.callCount + fillerStub.move.callCount;
         assert.equal(0, callCount);
       })
     })
@@ -762,16 +840,27 @@ describe('Тестирование методов класса и подклас
         testView.setElementListener(testHTMLElement, testHandler, 'onclick');
         assert.isFunction(testHTMLElement.onclick);
       })
+
+      it('Проверка при передаче не верного события', ()=> {
+        let testHTMLElement: HTMLElement = document.createElement('div');
+
+        expect(()=>testView.setElementListener(testHTMLElement, testHandler, 'fakeEvent')).to.throw('Слушатель не установлен: задано неверное событие');
+      })
     })
 
     describe('Тестирование метода positionHandler. Метод обрабатывает данные о событиях мыши на элементе '+
     '(относительные координаты курсора - в долях от единицы, и тип события).', ()=> {      
-
-      it('Обработка события перемещения курсора мыши на позицию "0.3" (событие mousemove), '+
-        'слайдер работает в режиме выбора единичного значения', ()=> {
-        let testView = new View();
-        let spy = sinon.spy();
+      let testView: View;
+      let spy: Sinon.SinonSpy;
+      
+      beforeEach(()=> {
+        testView = new View();
+        spy = sinon.spy();  
         testView.externalPositionHandler = spy;
+      })
+
+      it('Обработка события перемещения курсора мыши на позицию "0.3" (событие mousemove с нажатой кнопкой мыши), '+
+        'слайдер работает в режиме выбора единичного значения', ()=> {
         testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML, ()=>{return}));
         testView.sliderThumbs[0].htmlObject.dataset.position = '0.1';
         testView.activeThumb = testView.sliderThumbs[0];
@@ -780,11 +869,8 @@ describe('Тестирование методов класса и подклас
         expect(spy.args[0][1]).to.deep.equal(0);             
       })
 
-      it('Обработка события перемещения курсора мыши на позицию "0.6" (событие mousemove), '+
+      it('Обработка события перемещения курсора мыши на позицию "0.6" (событие mousemove с нажатой кнопкой мыши), '+
       'слайдер работает в режиме выбора диапазона', ()=> {
-        let testView = new View();
-        let spy = sinon.spy();
-        testView.externalPositionHandler = spy;
         testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML, ()=>{return}));
         testView.sliderThumbs[0].htmlObject.dataset.position = '0.1';
         testView.sliderThumbs.push(new SliderThumb('thumb', 'thumb', rootHTML, ()=>{return}));
@@ -795,13 +881,20 @@ describe('Тестирование методов класса и подклас
         expect(spy.args[0][1]).to.deep.equal(1);        
       })
 
+      it('Обработка события перемещения курсора мыши на позицию "0.6" (событие mousemove кнопки мыши не нажаты), '+
+      'слайдер работает в режиме выбора диапазона', ()=> {
+        testView.positionHandler(0.6, 'mousemove');
+        expect(spy.callCount).equal(0);       
+      })
+
       it('Обработка события опускания кнопки мыши над элементом на позиции "0.2" (событие mousedown)', ()=> {
-        let testView = new View();
-        let spy = sinon.spy();
-        testView.externalPositionHandler = spy;
         testView.positionHandler(0.2, 'mousedown');
         expect(spy.args[0][0]).to.deep.equal(0.2);
         assert.equal(spy.args[0].length, 1);       
+      })
+
+      it('Проверка метода при передачи неверного события', ()=> {
+        expect(()=>testView.positionHandler(0.2, 'onchange')).to.throw('Передано неверное событие');     
       })
     })
 
@@ -826,8 +919,6 @@ describe('Тестирование методов класса и подклас
       testView.sliderTrack.htmlObject = sliderHTMLObject;
       let indexTestData: number;
 
-
-
       let testData: {}[] = [
         {descriptor: 'Тестирование при горизонтальном виде слайдера', vertical: false, arg: undefined, width: 500, height: 30, ansv: 500},
         {descriptor: 'Тестирование при вертикальном виде слайдера', vertical: true, arg: undefined, width: 30, height: 750, ansv: 750},
@@ -847,7 +938,62 @@ describe('Тестирование методов класса и подклас
 
       it('Проверка работы метода при не заданных параметрах ориентации слайдера', ()=> {
         testView.verticalView = undefined;
-        assert.isUndefined(testView.getSliderSize(undefined));
+        assert.isUndefined(testView.getSliderSize(undefined));        
+      })
+    })
+
+    describe('Методы управления контрольной панелью', ()=> {
+      let panelStub: Sinon.SinonStubbedInstance<ControlPanel>;
+      let testView = new View();
+      
+      describe('Тестирование метода setControlPanel(parentElement: HTMLElement, input1?: HTMLInputElement, input2?: HTMLInputElement): void, '+
+      'позволяющего из вне установить конрольную панель в экземпляр класса View', ()=> {
+        let panelProtoStub//: Sinon.SinonStub;
+
+
+        it('Проверка', ()=> {
+          testView.setControlPanel(rootHTML);
+
+          assert.instanceOf(testView.controlPanel, ControlPanel);
+        })
+      })
+
+      describe('Тестирование метода setControlPanelValues(value: string, index: number): void. '+
+      'Метод запускает соответствующий метод контрольной панели.', ()=> {
+        it('Проверка', ()=> {
+          panelStub = sinon.createStubInstance(ControlPanel);
+          testView.controlPanel = panelStub;
+
+          testView.setControlPanelValues('10', 3);
+          assert.equal(panelStub.setValue.callCount, 1);
+          assert.deepEqual(panelStub.setValue.args[0], ['10', 3]);
+        })
+      })
+
+      describe('Тестирование метода setControlPanelParameters(param: {}): void, '+
+      'передающего параметры слайдера управляющим методам контрольной панели (setParameters)', ()=> {
+        it('Проверка', ()=> {
+          let parameters: {} = {1: '10', 2: '20', 3: '30'};
+          panelStub = sinon.createStubInstance(ControlPanel);
+          testView.controlPanel = panelStub;
+
+          testView.setControlPanelParameters(parameters);
+          assert.equal(panelStub.setParameters.callCount, 1);
+          assert.deepEqual(panelStub.setParameters.args[0][0], parameters);
+        })
+      })
+
+      describe('Тестирование метода setControlPanelListener(dataHandler: Function): void. '+
+      'Метод передает функцию-обработчик события в контрольную панель', ()=> {
+        it('Проверка', ()=> {
+          let handlerStub: Function = ()=> {return 'handlerStub'};          
+          panelStub = sinon.createStubInstance(ControlPanel);
+          testView.controlPanel = panelStub;
+
+          testView.setControlPanelListener(handlerStub);
+          assert.equal(panelStub.setListeners.callCount, 1);
+          assert.deepEqual(panelStub.setListeners.args[0][0], handlerStub);
+        })
       })
     })
   })
@@ -857,6 +1003,9 @@ describe('Тестирование методов класса и подклас
     testPanelHTML.name = 'control-panel';
     rootHTML.appendChild(testPanelHTML);
     
+    let panelContainerHTML: HTMLElement = document.createElement('div');
+    rootHTML.appendChild(panelContainerHTML);
+
     let testInputText1: HTMLInputElement = document.createElement('input');
     testInputText1.name = 'min-value';
     testPanelHTML.appendChild(testInputText1);
@@ -875,16 +1024,111 @@ describe('Тестирование методов класса и подклас
     testInputCheck2.type = 'checkbox';
     testPanelHTML.appendChild(testInputCheck2);
 
+    let externalInput1 = document.createElement('input');    
+    testPanelHTML.appendChild(externalInput1);
+
+    let externalInput2 = document.createElement('input');    
+    testPanelHTML.appendChild(externalInput2);
+
     describe('Тестирование метода setParameters(value: {})', ()=> {
       it('Тест 1', ()=> {
         let value: {} = {'min-value': 100, 'max-value': 300, 'cb1': true, 'cb2': false};
         let testPanel: ControlPanel = new ControlPanel(rootHTML);
+        
         testPanel.setParameters(value);
 
         assert.equal(testInputText1.value, '100');
         assert.equal(testInputText2.value, '300');
         assert.equal(testInputCheck1.checked, true);
         assert.equal(testInputCheck2.checked, false);
+      })
+    })
+
+    describe('Тестирование метода setListeners(eventHandler: Function): void, устанавливающего слушатели на элементы контрольной панели', ()=>{
+      let htmlParent = document.createElement('div');
+      document.createElement('div').appendChild(htmlParent);
+      let elementsType: string[] = ['checkbox', 'text', 'text', 'text', 'checkbox', 'text', 'checkbox'];
+
+
+      before(()=> {
+        sinon.stub(HTMLElement.prototype, 'querySelector').callsFake(()=> {return document.createElement('form')});                
+      })
+
+      after(()=>{
+        sinon.restore()
+      })
+
+      it('Проверка', ()=> {
+
+        let testPanel = new ControlPanel(htmlParent);
+        
+        elementsType.forEach((type)=> {
+          let element: HTMLInputElement = document.createElement('input');
+          element.type = type;
+          testPanel.elements.push(element);
+        })
+
+        testPanel.setListeners(()=>{});
+
+        testPanel.elements.forEach((element)=>{
+          assert.isFunction(element.onchange);
+        })
+      })
+    })
+
+    describe('Тестирование метода setValue(value: string, index: number): void, устанавливающего значение аргумента во внешнее поле input', ()=> {
+      let testPanel: ControlPanel = new ControlPanel(panelContainerHTML, externalInput1, externalInput2);
+
+      it('Проверка', ()=> {
+        testPanel.setValue('12', 1);
+        assert.equal(testPanel.externalRecievers[1].value, '12');
+      })
+    })
+
+    describe('Тестирование метода setParameters(value: {}): void, устанавливающего параметры слайдреа в поля контрольной формы', ()=> {
+      let testPanel: ControlPanel = new ControlPanel(panelContainerHTML);
+      let elementsType: {} = {use: 'checkbox', min: 'text', max: 'text', average: 'text', check: 'checkbox', value: 'text'};
+      let parameters: {} = {use: true, min: '10', max: '50', average: '30', check: false, value: '26'};
+
+      for (let key in elementsType) {
+        let element: HTMLInputElement = document.createElement('input');
+        element.name = key;
+        element.type = elementsType[key];
+        testPanelHTML.appendChild(element);
+        testPanel.elements.push(element);
+      }      
+
+      before(()=> {
+        testPanel.setParameters(parameters);
+      })
+      
+      for (let key in elementsType) {
+        let element: HTMLInputElement = testPanelHTML.querySelector(`input[name="${key}"]`);
+        
+        it('Проверка', ()=>{
+          if (elementsType[key] =='checkbox') {                        
+            assert.equal(element.checked, parameters[key]);            
+          } else {            
+            assert.equal(element.value, parameters[key]);
+          }
+        })
+      }      
+    })
+
+    describe('Тестирование метода getElements(): {}', ()=>{
+      let testPanel: ControlPanel = new ControlPanel(panelContainerHTML);
+      let elementsType: {} = {use: 'checkbox', min: 'text', max: 'text', average: 'text', check: 'checkbox', value: 'text'};      
+
+      for (let key in elementsType) {
+        let element: HTMLInputElement = document.createElement('input');
+        element.name = key;
+        element.type = elementsType[key];
+        testPanelHTML.appendChild(element);
+        testPanel.elements.push(element);
+      } 
+
+      it('Проверка', ()=> {
+        assert.deepEqual(testPanel.getElements(), testPanel.elements);
       })
     })
   })
