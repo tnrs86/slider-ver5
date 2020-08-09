@@ -20,6 +20,101 @@ let modelStub: Model = sinon.stub(Model.prototype);*/
 describe('Проверка методов класса Presenter', ()=> {
   let testView: View = new View();
   let testModel: Model = new Model();
+
+  describe('Проверка метода init(options: SliderOptions, rootHTMLElement: HTMLElement): void. '+
+  'Метод передает все настройки в модули Presenter и View, а так же запускает отрисовку слайдера на веб странице.', ()=> {
+    
+    let firstInput: HTMLInputElement = document.createElement('input') as HTMLInputElement;
+    let secondInput: HTMLInputElement = document.createElement('input') as HTMLInputElement;
+
+    let optionsCollection: SliderOptions[] = [
+      { minPossibleValue: 100,
+        maxPossibleValue: 200,
+        rangeMode: true,
+        startSelectedRange: 150,
+        endSelectedRange: 190,
+        step: undefined,
+        useScale: true,        
+        noNumericValues: false,
+        noNumericScale: {},
+        externalRecievers: [firstInput, secondInput],
+        usefeedBack: true, 
+        verticalView: true },
+
+        { minPossibleValue: 300,
+          maxPossibleValue: 800,
+          rangeMode: false,
+          startSelectedRange: 400,
+          endSelectedRange: 600,
+          step: 1,
+          useScale: false,        
+          noNumericValues: true,
+          noNumericScale: {'one': 1, 'two': 2, 'three': 3},
+          externalRecievers: [firstInput, secondInput],
+          usefeedBack: false, 
+          verticalView: false }
+    ]
+
+    let setBaseConfigurationSpy: Sinon.SinonStub;
+    let setRangeModeSpy: Sinon.SinonStub;
+    let getRelativeDataSpy: Sinon.SinonStub; //pres
+    let setThumbFeedbacksSpy: Sinon.SinonStub;
+    let setSliderOrientationSpy: Sinon.SinonStub;
+    let getScaleDataSpy: Sinon.SinonStub;
+    let setScaleSpy: Sinon.SinonStub;
+    let setListenersSpy: Sinon.SinonStub;
+    let setElementPositionsSpy: Sinon.SinonStub;
+    let setCurrentValuesSpy: Sinon.SinonStub; //view
+    let setStepSpy: Sinon.SinonStub; //view
+    let setControlPanelSpy: Sinon.SinonStub;
+    let setControlPanelParametersSpy: Sinon.SinonStub;
+    let setControlPanelListenerSpy: Sinon.SinonStub;
+
+    let ansvers: number[] = [14, 10];
+
+    before(()=> {
+       setBaseConfigurationSpy = sinon.stub(View.prototype, 'setBaseConfiguration');
+       setRangeModeSpy = sinon.stub(View.prototype, 'setRangeMode');
+       getRelativeDataSpy = sinon.stub(Presenter.prototype, 'getRelativeData'); //pres
+       setThumbFeedbacksSpy = sinon.stub(View.prototype, 'setThumbFeedbacks');
+       setSliderOrientationSpy = sinon.stub(View.prototype, 'setSliderOrientation');
+       getScaleDataSpy = sinon.stub(Presenter.prototype, 'getScaleData');
+       setScaleSpy = sinon.stub(View.prototype, 'setScale');
+       setListenersSpy = sinon.stub(View.prototype, 'setListeners');
+       setElementPositionsSpy = sinon.stub(View.prototype, 'setElementPositions');
+       setCurrentValuesSpy = sinon.stub(Model.prototype, 'setCurrentValues'); //model
+       setStepSpy = sinon.stub(Model.prototype, 'setStep');//model
+       setControlPanelSpy = sinon.stub(View.prototype, 'setControlPanel');
+       setControlPanelParametersSpy = sinon.stub(View.prototype, 'setControlPanelParameters');
+       setControlPanelListenerSpy = sinon.stub(View.prototype, 'setControlPanelListener');
+    })
+
+    afterEach(()=> {
+      sinon.resetHistory();
+    })
+
+    after(()=> {
+      sinon.restore();
+    })
+
+    optionsCollection.forEach((options, index)=>{
+      it('Тест №' + index, ()=> {
+        let testPresenter = new Presenter(options, testView, testModel);
+
+        testPresenter.init(options, document.createElement('div'));
+        let result: number =  setBaseConfigurationSpy.callCount + setRangeModeSpy.callCount + getRelativeDataSpy.callCount +
+            setThumbFeedbacksSpy.callCount + setSliderOrientationSpy.callCount + getScaleDataSpy.callCount + 
+            setScaleSpy.callCount + setListenersSpy.callCount + setElementPositionsSpy.callCount + 
+            setCurrentValuesSpy.callCount + setStepSpy.callCount + setControlPanelSpy.callCount + 
+            setControlPanelParametersSpy.callCount + setControlPanelListenerSpy.callCount;
+
+        assert.equal(result, ansvers[index]);
+      })
+    })
+
+  })
+
+
   describe('Проверка метода getAbsoluteData(value: number[]| number): number[]|number, '+
   'который преобразовывает относительные величины (доли единицы) в абсолютные (в единицах измерения слайдера)', ()=> {
     let testOptions: SliderOptions = {
