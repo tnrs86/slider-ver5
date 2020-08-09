@@ -1,5 +1,8 @@
 {
   "compilerOptions": {
-    "lib": ["es6", "dom", "es2015.iterable"]
-  }
+    "target": "es5",
+    "module": "commonjs",
+    "outDir": "./test2"    
+  },
+  "files":["./tests/view/view_test2.ts"]
 }
