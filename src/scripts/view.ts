@@ -1,7 +1,6 @@
 /// <reference path="./app.d.ts" />
 export class View {  
   rangeMode: boolean = false;
-  useScale: boolean = false;
   useFeedback: boolean = false;
   verticalView: boolean = false;
   slider: Slider;
@@ -21,7 +20,8 @@ export class View {
   }
 
   setRangeMode(): void {//tested
-    if (!this.rangeMode) {
+    /* istanbul ignore else */
+    if  (!this.rangeMode) {
       this.rangeMode = true;
       this.sliderThumbs.push(new SliderThumb('thumb', 'slider__thumb', this.sliderTrack.htmlObject, this.setActiveThumb.bind(this)));
       this.sliderFiller = new SliderFiller('filler', 'slider__filler', this.sliderTrack.htmlObject);
@@ -89,7 +89,7 @@ export class View {
     })
   }
 
-  setElementPositions(positions: number[]|number, index?: number, feedbackContent?: string) { //tested
+  setElementPositions(positions: number[]|number, index?: number, feedbackContent?: string): void { //tested
     if ( typeof positions == 'object' && typeof index == 'undefined') { //tested
       this.sliderThumbs.forEach((thumb, index)=> {
         thumb.move(positions[index], feedbackContent);
@@ -106,7 +106,7 @@ export class View {
       this.sliderThumbs[index].setPositionAttribute(positions);
       
       if (this.sliderFiller) {        
-        this.sliderFiller.move([this.sliderThumbs[0].getPositionAttribute(), this.sliderThumbs[1].getPositionAttribute()]);
+        this.sliderFiller.move([this.sliderThumbs[0].getPositionAttribute(), this.sliderThumbs[1].getPositionAttribute()]);        
       }
       
     } else { //subtested
@@ -126,9 +126,9 @@ export class View {
       this.sliderTrack.setListeners(this.positionHandler.bind(this), this.setActiveThumb.bind(this));
 
       if (this.sliderScale) {
-        this.sliderScale.setListeners(this.positionHandler.bind(this));
+        this.sliderScale.setListeners(this.positionHandler.bind(this)); 
       }
-
+     
     } else { //tested
       throw(new Error('Не установлены элементы управления слайдером!'));
     }
@@ -139,20 +139,18 @@ export class View {
     
     if (element instanceof PageElement) {
       desiredElement = element.htmlObject;
-    } else if (element instanceof HTMLElement) {
-      desiredElement = element;
-    }
-
-    if (typeof desiredElement[event] === 'object') {
-      desiredElement[event] = handler;
     } else {
-      //bug
+      desiredElement = element;      
     }
     
-    
+    if (typeof desiredElement[event] === 'object') {
+      desiredElement[event] = handler;     
+    } else {
+      throw (new Error('Слушатель не установлен: задано неверное событие'));
+    }
   }
 
-  positionHandler(position: number, eventType: string): void {
+  positionHandler(position: number, eventType: string): void { //tested
     //обработчик данных, полученных при срабатывании событий на элементах
 
     //переработать: на выходе должно быть число или число и индекс
@@ -168,8 +166,8 @@ export class View {
       results.push(position);
       this.externalPositionHandler(position);
     } else {
-
-    }    
+      throw (new Error('Передано неверное событие'));
+    }
   }
 
   setActiveThumb(currentThumb: SliderThumb | undefined): void { //tested
@@ -178,46 +176,41 @@ export class View {
 
   getSliderSize(verical?: boolean): number { //tested
     
-    if (typeof verical == 'undefined') {
-      if (typeof this.verticalView != 'undefined') {
-        if (this.verticalView) {          
+    if (typeof verical == 'undefined') {      
+      if (typeof this.verticalView != 'undefined') {        
+        if (this.verticalView) {                    
           return this.sliderTrack.htmlObject.clientHeight;
-        }
-        return this.sliderTrack.htmlObject.clientWidth;        
-      } else { //subtested
+        }          
+        return this.sliderTrack.htmlObject.clientWidth;
+                
+      } else { //subtested        
         console.warn('Не задан параметр ориентации слайдера!');
+        return undefined;
       }
-    } else {
-      if (verical) {
+    } else {      
+      if (verical) {        
         return this.sliderTrack.htmlObject.clientHeight;
-      } else {
+      } else {        
         return this.sliderTrack.htmlObject.clientWidth; 
       }
     }
   }
 
-  dataConverter() {
-    //перевод величин из px в %, используется в eventHandler
-  }
-
-  setControlPanel(parentElement: HTMLElement, input1?: HTMLInputElement, input2?: HTMLInputElement) {
+  setControlPanel(parentElement: HTMLElement, input1?: HTMLInputElement, input2?: HTMLInputElement): void { //tested
     this.controlPanel = new ControlPanel(parentElement, input1, input2);
   }
 
-  setControlPanelValues(value: string, index: number) {
-    this.controlPanel.setValue(value, index)
+  setControlPanelValues(value: string, index: number): void { //tested
+    this.controlPanel.setValue(value, index);
   }
 
-  setControlPanelParameters(param: {}) {
+  setControlPanelParameters(param: {}): void { //tested
     this.controlPanel.setParameters(param);
   }
 
-  setControlPanelListener(dataHandler: Function) {
+  setControlPanelListener(dataHandler: Function): void { //tested
     this.controlPanel.setListeners(dataHandler);
-  }
-
-  setExternalRecieversListener(dataHandler: Function) {
-    //this.controlPanel.setListeners(dataHandler);
+    
   }
 }
 
@@ -232,9 +225,6 @@ export class PageElement {
   constructor(name: string, className: string, parent: HTMLElement) {
     this.name = name;
     this.className = className;
-    /*this.htmlObject = document.createElement('div');   
-    this.htmlObject.className = className;  */
-    
     this.htmlObject  = this.createHTMLElement(className);    
     parent.appendChild(this.htmlObject);      
   }
@@ -264,9 +254,9 @@ export class Slider extends PageElement {
       super.changeOrientation(verticalView);
     
       if (verticalView) {        
-        this.htmlObject.className = this.className + ' ' + this.className + '_vertical';
+        this.htmlObject.className = this.className + ' ' + this.className + '_vertical';        
       } else {
-        this.htmlObject.className = this.className + ' ' + this.className + '_horizontal';
+        this.htmlObject.className = this.className + ' ' + this.className + '_horizontal';        
       }
     }    
   }
@@ -294,7 +284,7 @@ export class SliderTrack extends PageElement {
       //передавать дальше расстояние в долях от единицы      
     }
 
-    this.htmlObject.onmouseup = (event)=> {
+    this.htmlObject.onmouseup = ()=> {
       setCurrentThumb(undefined);
     }     
   }
@@ -338,21 +328,28 @@ export class SliderThumb extends PageElement {
   }
 
   manageFeedback(useFeedback: boolean): void { //tested
-    if (useFeedback) {
-      if (!this.feedback) {
-        this.feedback = new ThumbFeedback('feedback', this.feedbackClassName, this.htmlObject)
-      }
+    
+    if (useFeedback) { 
+      
+      if (!this.feedback) {        
+        this.feedback = new ThumbFeedback('feedback', this.feedbackClassName, this.htmlObject);
+        return;
+      } 
+      
     } else {
       if (this.feedback) {
         this.feedback = undefined;        
-        this.htmlObject.removeChild(this.htmlObject.getElementsByClassName(this.feedbackClassName)[0]);
+        this.htmlObject.removeChild(this.htmlObject.getElementsByClassName(this.feedbackClassName)[0]); 
+              
       }
     }
   }
 
   move(position: number, value?: string): void { //tested
     
-    if (this.feedback) this.feedback.setValue(value);
+    if (this.feedback) {
+      this.feedback.setValue(value);
+    }
 
     if (this.verticalView) {
       this.htmlObject.style.top = position * 100 + '%';
@@ -365,40 +362,27 @@ export class SliderThumb extends PageElement {
       if (value) {      
       this.htmlObject.dataset.position = '' + value;
     } else {
-      if (this.verticalView) {
-        
+      if (this.verticalView) {        
         this.htmlObject.dataset.position = '' + this.htmlObject.offsetTop / this.htmlObject.parentElement.offsetHeight;
+        //throw new Error('' + this.htmlObject.offsetTop);
       } else {        
-        
         this.htmlObject.dataset.position = '' + this.htmlObject.offsetLeft / this.htmlObject.parentElement.offsetWidth;
+        //throw new Error('' + this.htmlObject.offsetLeft);
       }
     }
   }
   
-  getPositionAttribute(): number { //notested
+  getPositionAttribute(): number { //tested
     return parseFloat(this.htmlObject.dataset.position);
   }
-
-  /*[Symbol.toPrimitive] = function(hint: string): string | number { //tested
-
-    if (hint == 'number') {      
-      if (this.htmlObject.dataset.position) {
-        return parseFloat(this.htmlObject.dataset.position)      
-      } else {
-        return -1;
-      }
-    } else {
-      return this.name;
-    }    
-  }*/
 }
 
 export class SliderFiller extends PageElement {
   move(positions: number[]): void { //tested
-    if (this.verticalView) {
+    if (this.verticalView) { //subtested
       this.htmlObject.style.top = positions[0]*100 + '%';
       this.htmlObject.style.height = (positions[1] - positions[0])*100 + '%';
-    } else {
+    } else {//subtested
       this.htmlObject.style.left = positions[0]*100 + '%';
       this.htmlObject.style.width = (positions[1] - positions[0])*100 + '%';
     }
@@ -409,8 +393,7 @@ export class SliderFiller extends PageElement {
     while (this.htmlObject.style.length) {
       this.htmlObject.style.removeProperty(this.htmlObject.style[0]);
     } 
-    
-    //this.htmlObject.style.all = '';
+
   }
 }
 
@@ -435,8 +418,7 @@ export class SliderScale extends PageElement {
 
     let mark = document.createElement('div');
     mark.className = 'scale__mark'; 
-    result.appendChild(mark);
-    
+    result.appendChild(mark);    
     let markLabel = document.createElement('div');
     markLabel.className = 'scale__mark-label';    
     markLabel.textContent = text;
@@ -446,7 +428,7 @@ export class SliderScale extends PageElement {
   }
 
   changeOrientation(verticalView: boolean): void {//tested
-
+    /* istanbul ignore else */
     if (this.verticalView != verticalView) {
       super.changeOrientation(verticalView);
       let classNameModificator: string = '_horizontal';
@@ -495,7 +477,7 @@ export class ControlPanel {
     this.elements = Array.from(this.formObject.getElementsByClassName('control-panel__input')) as HTMLInputElement[];
   }
 
-  setListeners(eventHandler: Function) {
+  setListeners(eventHandler: Function): void { //tested
     this.elements.forEach((element)=> {      
       element.onchange = ()=> {
         let value: number|boolean;
@@ -507,20 +489,13 @@ export class ControlPanel {
         eventHandler(value, element.name);
       }
     })
-    /*this.externalRecievers.forEach((reciever, index)=> {
-      
-      reciever.onchange = ()=> {
-        
-        eventHandler(reciever.value, index);
-      }
-    })*/
   }
 
-  setValue(value: string, index: number) {
+  setValue(value: string, index: number): void { //tested    
     this.externalRecievers[index].value = value
   }
 
-  setParameters(value: {}) {
+  setParameters(value: {}): void { //tested
     Object.keys(value).forEach((key)=> {
       let currentInput: HTMLInputElement = this.formObject.querySelector(`input[name="${key}"]`);
       if (currentInput.type == 'checkbox') {
@@ -531,7 +506,7 @@ export class ControlPanel {
     })
   }
  
-  getElements(): {} {
+  getElements(): {} { //tested
     return this.elements;
   }
 
