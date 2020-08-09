@@ -6,16 +6,19 @@ const PATHS = path.join(__dirname, '../src');
   
 const appConfig = {
   mode: 'development',
-  entry: './src/apps/view.js',
+  entry: './src/scripts/app.ts',
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: 'bundle.js'
   },  
+  resolve: {
+    extensions: ['.ts', '.tsx', '.js']
+  },
   module: {
     rules: [
       {
-        test: /\.js$/,
-        use: 'babel-loader'
+        test: /\.tsx?$/,
+        use: 'ts-loader'
       },
       {
         test: /\.pug$/,
@@ -48,7 +51,7 @@ const appConfig = {
       filename: "[name].css",
     }),
     new HtmlWebpackPlugin({
-      template: './src/page/page.pug',
+      template: './src/pages/page.pug',
       filename: './about/page-1.html',
       inject: true
     })
@@ -79,6 +82,15 @@ const testConfigView = {
         },
         enforce: 'post',
         exclude: /node_modules|\.spec\.js$/,
+      },
+      {
+        test: /\.js$/,
+        exclude: /node_modules/,
+        use: [
+          {
+            loader: 'babel-loader'
+          }
+        ]
       }
     ]
   },
@@ -167,4 +179,4 @@ const testConfigModel = {
   }
 };
 
-module.exports = [ testConfigPresenter ];
+module.exports = [ appConfig ];
